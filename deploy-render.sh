@@ -40,12 +40,14 @@ render workspaces
 SERVICE_NAME="${1:-amul-ntfy}"
 
 echo ""
-echo "📦 Creating web service '$SERVICE_NAME' on Render with Docker image 'binwiederhier/ntfy:latest'..."
+echo "📦 Creating web service '$SERVICE_NAME' on Render with Docker runtime from GitHub..."
 
 render services create \
   --name "$SERVICE_NAME" \
   --type web_service \
-  --image "docker.io/binwiederhier/ntfy:latest" \
+  --repo "https://github.com/sumittechmero/amul-protein-product-tracker" \
+  --branch "main" \
+  --runtime docker \
   --plan free \
   --health-check-path "/v1/health" \
   --env-var "PORT=10000" \
