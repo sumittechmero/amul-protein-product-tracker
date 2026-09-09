@@ -104,7 +104,7 @@ export async function sendRestockAlert(
     `💰 <b>Price:</b> ₹${product.price}`,
     ``,
     `🛒 <b>Direct Buy Link:</b>`,
-    `<a href="${product.url}">${product.url}</a>`,
+    `<a href="${escapeHtml(product.url)}">${escapeHtml(product.url)}</a>`,
     ``,
     `⏰ <i>Checked at ${istTime} IST</i>`
   ].join('\n');

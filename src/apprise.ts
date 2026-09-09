@@ -114,3 +114,31 @@ export async function sendAppriseTest(
 
   return sendAppriseNotification(serverUrl, targetUrls, title, body, configKey);
 }
+
+/**
+ * Sends an Apprise out-of-stock notification when an item is no longer available.
+ */
+export async function sendAppriseOutOfStockAlert(
+  serverUrl: string,
+  targetUrls: string,
+  product: ProductInfo,
+  configKey?: string
+): Promise<AppriseResult> {
+  const istTime = new Date().toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  });
+
+  const title = `⚠️ Amul Out of Stock: ${product.name}`;
+  const body = [
+    `🔴 ${product.name} is now OUT OF STOCK.`,
+    `💰 Price: ₹${product.price}`,
+    `⏰ Checked at ${istTime} IST`
+  ].join('\n');
+
+  return sendAppriseNotification(serverUrl, targetUrls, title, body, configKey);
+}
+

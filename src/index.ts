@@ -90,7 +90,11 @@ export default {
 
       // GET /api/config
       if (path === '/api/config' && method === 'GET') {
-        return jsonResponse(config);
+        const safeConfig = {
+          ...config,
+          adminPassword: '••••••••'
+        };
+        return jsonResponse(safeConfig);
       }
 
       // POST /api/config/telegram

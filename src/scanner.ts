@@ -1,8 +1,8 @@
 import { AppConfig, ProductInfo, ScanLog, StockState, TrackedRule } from './types';
 import { fetchAmulProducts } from './amul';
 import { sendOutOfStockAlert, sendRestockAlert } from './telegram';
-import { sendNtfyRestockAlert } from './ntfy';
-import { sendAppriseRestockAlert } from './apprise';
+import { sendNtfyOutOfStockAlert, sendNtfyRestockAlert } from './ntfy';
+import { sendAppriseOutOfStockAlert, sendAppriseRestockAlert } from './apprise';
 
 const CONFIG_KEY = 'app_config';
 const STOCK_STATE_KEY = 'stock_state';
@@ -327,19 +327,23 @@ export async function runScan(
       let shouldAlertOOS = false;
 
       if (isCurrentlyInStock) {
-        if (!prev || !wasPreviouslyInStock) {
-          // Status transitioned from OOS to In Stock
+        if (!prev || !wasPreviouslyInStock || !prev.lastAlertSentAt) {
+          // Status transitioned from OOS to In Stock, or no alert has been sent yet
           shouldAlertRestock = true;
         } else {
           // It was already in stock, check cooldown
-          const cooldownMs = (config.telegram.cooldownHours || 4) * 3600 * 1000;
-          if (prev.lastAlertSentAt && now - prev.lastAlertSentAt > cooldownMs) {
+          const cooldownMs = (config.telegram?.cooldownHours || 4) * 3600 * 1000;
+          if (now - prev.lastAlertSentAt > cooldownMs) {
             shouldAlertRestock = true;
           }
         }
       } else if (wasPreviouslyInStock && !isCurrentlyInStock) {
         // Status transitioned from In Stock to OOS
-        if (config.telegram.notifyOnOutOfStock) {
+        if (
+          config.telegram?.notifyOnOutOfStock ||
+          config.ntfy?.notifyOnOutOfStock ||
+          config.apprise?.notifyOnOutOfStock
+        ) {
           shouldAlertOOS = true;
         }
       }
@@ -347,7 +351,7 @@ export async function runScan(
       let alertSentForThisProduct = false;
 
       // Dispatch Telegram notifications if configured
-      if (config.telegram.botToken && config.telegram.chatId) {
+      if (config.telegram?.botToken && config.telegram?.chatId) {
         if (shouldAlertRestock && config.telegram.notifyOnRestock) {
           const res = await sendRestockAlert(
             config.telegram.botToken,
@@ -360,14 +364,14 @@ export async function runScan(
           } else {
             console.error(`Telegram alert error for ${product.name}:`, res.error);
           }
-        } else if (shouldAlertOOS) {
+        } else if (shouldAlertOOS && config.telegram.notifyOnOutOfStock) {
           const res = await sendOutOfStockAlert(
             config.telegram.botToken,
             config.telegram.chatId,
             product
           );
           if (res.success) {
-            alertsSent.push(`Out-of-stock update sent for: ${product.name}`);
+            alertsSent.push(`Telegram out-of-stock update sent for: ${product.name}`);
             alertSentForThisProduct = true;
           }
         }
@@ -388,6 +392,19 @@ export async function runScan(
           } else {
             console.error(`ntfy alert error for ${product.name}:`, ntfyRes.error);
           }
+        } else if (shouldAlertOOS && config.ntfy.notifyOnOutOfStock) {
+          const ntfyRes = await sendNtfyOutOfStockAlert(
+            config.ntfy.serverUrl,
+            config.ntfy.topic,
+            product,
+            config.ntfy.token
+          );
+          if (ntfyRes.success) {
+            alertsSent.push(`ntfy out-of-stock alert sent for: ${product.name}`);
+            alertSentForThisProduct = true;
+          } else {
+            console.error(`ntfy out-of-stock alert error for ${product.name}:`, ntfyRes.error);
+          }
         }
       }
 
@@ -405,6 +422,19 @@ export async function runScan(
             alertSentForThisProduct = true;
           } else {
             console.error(`Apprise alert error for ${product.name}:`, appriseRes.error);
+          }
+        } else if (shouldAlertOOS && config.apprise.notifyOnOutOfStock) {
+          const appriseRes = await sendAppriseOutOfStockAlert(
+            config.apprise.serverUrl,
+            config.apprise.urls,
+            product,
+            config.apprise.configKey
+          );
+          if (appriseRes.success) {
+            alertsSent.push(`Apprise out-of-stock alert sent for: ${product.name}`);
+            alertSentForThisProduct = true;
+          } else {
+            console.error(`Apprise out-of-stock alert error for ${product.name}:`, appriseRes.error);
           }
         }
       }

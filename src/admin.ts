@@ -364,7 +364,16 @@ export function getAdminHtml(): string {
               </div>
               <input type="checkbox" id="ntfyNotifyRestock" class="w-4 h-4 accent-emerald-500 rounded cursor-pointer" checked>
             </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs font-semibold text-slate-200">Alert on Out-of-Stock</p>
+                <p class="text-[11px] text-slate-500">Send push notification when item runs out of stock</p>
+              </div>
+              <input type="checkbox" id="ntfyNotifyOOS" class="w-4 h-4 accent-emerald-500 rounded cursor-pointer">
+            </div>
           </div>
+
 
           <!-- Action Buttons -->
           <div class="border-t border-slate-800 pt-5 flex flex-wrap items-center gap-3">
@@ -444,7 +453,16 @@ export function getAdminHtml(): string {
               </div>
               <input type="checkbox" id="appriseNotifyRestock" class="w-4 h-4 accent-purple-500 rounded cursor-pointer" checked>
             </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs font-semibold text-slate-200">Alert on Out-of-Stock</p>
+                <p class="text-[11px] text-slate-500">Trigger Apprise notifications when item runs out of stock</p>
+              </div>
+              <input type="checkbox" id="appriseNotifyOOS" class="w-4 h-4 accent-purple-500 rounded cursor-pointer">
+            </div>
           </div>
+
 
           <!-- Action Buttons -->
           <div class="border-t border-slate-800 pt-5 flex flex-wrap items-center gap-3">
@@ -599,7 +617,7 @@ export function getAdminHtml(): string {
       <div class="space-y-4 text-xs">
         <div>
           <label class="block font-semibold text-slate-300 mb-1">Session Access Password</label>
-          <input type="password" id="inputAdminPassword" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono">
+          <input type="password" id="inputAdminPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter') saveAdminAuthToken()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono">
           <p class="text-[11px] text-slate-500 mt-1">Enter your admin password to authenticate this session</p>
         </div>
         <button onclick="saveAdminAuthToken()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition">Authenticate Session</button>
@@ -607,7 +625,7 @@ export function getAdminHtml(): string {
         <div class="border-t border-slate-800 pt-3 space-y-2">
           <label class="block font-semibold text-slate-300 mb-1">Change Cloudflare Worker Password</label>
           <div class="flex gap-2">
-            <input type="password" id="inputChangePassword" placeholder="New password" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
+            <input type="password" id="inputChangePassword" placeholder="New password" onkeydown="if(event.key==='Enter') updateServerPassword()" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
             <button onclick="updateServerPassword()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl transition">Update</button>
           </div>
           <p class="text-[10px] text-slate-500">Persists the new admin password in KV storage.</p>
@@ -623,7 +641,7 @@ export function getAdminHtml(): string {
 
     // Helper: get stored admin token
     function getAuthHeader() {
-      const pass = localStorage.getItem('amul_admin_pass') || '1sumit100';
+      const pass = localStorage.getItem('amul_admin_pass') || '';
       return { 'x-admin-password': pass };
     }
 
@@ -669,6 +687,16 @@ export function getAdminHtml(): string {
 
     // Fetch configuration and initial data
     async function init() {
+      // Allow passing password via query param on first visit: e.g. /admin?password=...
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('password')) {
+        const p = urlParams.get('password');
+        if (p) {
+          localStorage.setItem('amul_admin_pass', p);
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
+
       try {
         const res = await fetch('/api/config', { headers: getAuthHeader() });
         if (res.status === 401) {
@@ -715,6 +743,7 @@ export function getAdminHtml(): string {
         document.getElementById('ntfyToken').value = appConfig.ntfy.token || '';
         document.getElementById('ntfyEnabled').checked = Boolean(appConfig.ntfy.enabled);
         document.getElementById('ntfyNotifyRestock').checked = appConfig.ntfy.notifyOnRestock ?? true;
+        document.getElementById('ntfyNotifyOOS').checked = appConfig.ntfy.notifyOnOutOfStock ?? false;
         
         const openLink = document.getElementById('linkOpenNtfy');
         if (openLink && appConfig.ntfy.topic) {
@@ -731,6 +760,7 @@ export function getAdminHtml(): string {
         document.getElementById('appriseConfigKey').value = appConfig.apprise.configKey || '';
         document.getElementById('appriseEnabled').checked = Boolean(appConfig.apprise.enabled);
         document.getElementById('appriseNotifyRestock').checked = appConfig.apprise.notifyOnRestock ?? true;
+        document.getElementById('appriseNotifyOOS').checked = appConfig.apprise.notifyOnOutOfStock ?? false;
       }
 
       // Amul
@@ -997,7 +1027,8 @@ export function getAdminHtml(): string {
           topic: document.getElementById('ntfyTopic').value.trim(),
           token: document.getElementById('ntfyToken').value.trim(),
           enabled: document.getElementById('ntfyEnabled').checked,
-          notifyOnRestock: document.getElementById('ntfyNotifyRestock').checked
+          notifyOnRestock: document.getElementById('ntfyNotifyRestock').checked,
+          notifyOnOutOfStock: document.getElementById('ntfyNotifyOOS').checked
         };
 
         const res = await fetch('/api/config/ntfy', {
@@ -1053,7 +1084,8 @@ export function getAdminHtml(): string {
           urls: document.getElementById('appriseUrls').value.trim(),
           configKey: document.getElementById('appriseConfigKey').value.trim(),
           enabled: document.getElementById('appriseEnabled').checked,
-          notifyOnRestock: document.getElementById('appriseNotifyRestock').checked
+          notifyOnRestock: document.getElementById('appriseNotifyRestock').checked,
+          notifyOnOutOfStock: document.getElementById('appriseNotifyOOS').checked
         };
 
         const res = await fetch('/api/config/apprise', {

@@ -138,3 +138,36 @@ export async function sendNtfyTest(
     token
   });
 }
+
+/**
+ * Dispatches an out-of-stock notification to ntfy.
+ */
+export async function sendNtfyOutOfStockAlert(
+  serverUrl: string,
+  topic: string,
+  product: ProductInfo,
+  token?: string
+): Promise<NtfyResult> {
+  const istTime = new Date().toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  });
+
+  const title = `⚠️ Out of Stock: ${product.name}`;
+  const message = [
+    `🔴 ${product.name} is now OUT OF STOCK.`,
+    `💰 Price: ₹${product.price}`,
+    `⏰ Checked: ${istTime} IST`
+  ].join('\n');
+
+  return publishNtfy(serverUrl, topic, title, message, {
+    priority: 'default',
+    tags: ['warning', 'x'],
+    clickUrl: product.url,
+    token
+  });
+}
+

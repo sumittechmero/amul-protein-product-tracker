@@ -54,6 +54,8 @@ render services create \
   --env-var "NTFY_LISTEN_HTTP=:10000" \
   --env-var "NTFY_BEHIND_PROXY=true" \
   --env-var "NTFY_CACHE_DURATION=24h" \
+  --env-var "NTFY_BASE_URL=https://${SERVICE_NAME}.onrender.com" \
+  --env-var "NTFY_UPSTREAM_BASE_URL=https://ntfy.sh" \
   --confirm
 
 echo ""

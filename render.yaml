@@ -16,3 +16,8 @@ services:
         value: "true"
       - key: NTFY_CACHE_DURATION
         value: "24h"
+      - key: NTFY_BASE_URL
+        value: "https://amul-ntfy.onrender.com"
+      - key: NTFY_UPSTREAM_BASE_URL
+        value: "https://ntfy.sh"
+
