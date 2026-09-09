@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "amul-stock-tracker",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-09-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
+  "kv_namespaces": [
+    {
+      "binding": "AMUL_TRACKER_KV",
+      "id": "8715d98946374b46abbd539f5ab53d07"
+    }
+  ],
+  "vars": {
+    "DEFAULT_ADMIN_PASSWORD": "1sumit100"
+  }
+}

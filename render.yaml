@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: amul-ntfy
+    runtime: image
+    image:
+      url: docker.io/binwiederhier/ntfy:latest
+    dockerCommand: serve
+    plan: free
+    healthCheckPath: /v1/health
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: NTFY_LISTEN_HTTP
+        value: ":10000"
+      - key: NTFY_BEHIND_PROXY
+        value: "true"
+      - key: NTFY_CACHE_DURATION
+        value: "24h"

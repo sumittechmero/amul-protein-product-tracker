@@ -1,0 +1,24 @@
+{
+  "name": "amul-stock-tracker-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker that continuously scans shop.amul.com for available protein products and sends Telegram alerts with Admin Panel",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "cloudflare-worker",
+    "amul",
+    "stock-tracker",
+    "telegram-bot"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260908.1",
+    "typescript": "^5.7.3",
+    "wrangler": "^4.130.0"
+  }
+}
