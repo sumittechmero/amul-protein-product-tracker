@@ -45,7 +45,7 @@ npm run dev
 
 Open **http://localhost:8787** in your browser to access the Admin Panel!
 
-- **Default Admin Password**: `admin` (can be changed in the UI or via `wrangler.jsonc`)
+- **Admin Password**: Configured via `DEFAULT_ADMIN_PASSWORD` in `wrangler.jsonc` (can be changed in the UI)
 
 ---
 
@@ -159,4 +159,4 @@ Open the URL in any browser to access your deployed Admin Panel!
 | `DELETE` | `/api/rules/:id` | Delete a tracking rule |
 | `GET` | `/api/logs` | Fetch recent scan activity logs |
 
-*All `/api/*` endpoints require the `x-admin-password` header (default: `admin`).*
+*All `/api/*` endpoints require the `x-admin-password` header.*
