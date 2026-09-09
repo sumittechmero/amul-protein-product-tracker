@@ -23,7 +23,7 @@ export function getDefaultConfig(): AppConfig {
       cooldownHours: 4
     },
     ntfy: {
-      serverUrl: 'https://ntfy.sh',
+      serverUrl: 'https://amul-ntfy.onrender.com',
       topic: 'amul-protein-alerts',
       token: '',
       enabled: false,
@@ -205,7 +205,41 @@ export interface ScanExecutionResult {
 }
 
 /**
- * Runs a scan against Amul, detects inventory changes, triggers Telegram alerts, and saves state.
+ * Sends a lightweight keep-alive ping to self-hosted Render services (e.g. ntfy, Apprise)
+ * to ensure they never sleep on Render's free tier (which spins down after 15m of inactivity).
+ */
+export async function keepAliveRenderServices(config: AppConfig): Promise<void> {
+  const urlsToPing: string[] = [];
+
+  if (config.ntfy?.serverUrl?.includes('.onrender.com')) {
+    const base = config.ntfy.serverUrl.trim().replace(/\/+$/, '');
+    urlsToPing.push(`${base}/v1/health`);
+  }
+
+  if (config.apprise?.serverUrl?.includes('.onrender.com')) {
+    const base = config.apprise.serverUrl.trim().replace(/\/+$/, '');
+    urlsToPing.push(`${base}/status`);
+  }
+
+  // Always ping the default amul-ntfy Render service to keep it active
+  const defaultRenderNtfy = 'https://amul-ntfy.onrender.com/v1/health';
+  if (!urlsToPing.includes(defaultRenderNtfy)) {
+    urlsToPing.push(defaultRenderNtfy);
+  }
+
+  await Promise.allSettled(
+    urlsToPing.map(url =>
+      fetch(url, {
+        method: 'GET',
+        headers: { 'User-Agent': 'Cloudflare-Worker-Amul-KeepAlive/1.0' },
+        signal: AbortSignal.timeout(4000)
+      }).catch(() => {})
+    )
+  );
+}
+
+/**
+ * Runs a scan against Amul, detects inventory changes, triggers alerts, and saves state.
  */
 export async function runScan(
   kv: KVNamespace | undefined,
@@ -214,6 +248,9 @@ export async function runScan(
 ): Promise<ScanExecutionResult> {
   const config = overrideConfig || (await getConfig(kv));
   const now = Date.now();
+
+  // Continuously ping Render services to prevent free-tier spindown
+  keepAliveRenderServices(config).catch(() => {});
 
   // If disabled and triggered by cron, skip
   if (!config.isScanningActive && trigger === 'cron') {
