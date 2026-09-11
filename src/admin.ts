@@ -150,7 +150,7 @@ export function getAdminHtml(): string {
             <i class="fa-regular fa-clock text-indigo-400"></i>
           </div>
           <div id="statLastScan" class="text-lg font-bold text-slate-200">Never</div>
-          <p id="statLastScanSub" class="text-xs text-slate-500 mt-1">Cron runs every minute</p>
+          <p id="statLastScanSub" class="text-xs text-slate-500 mt-1">Cron runs every 10 minutes</p>
         </div>
       </div>
 

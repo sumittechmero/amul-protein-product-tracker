@@ -256,7 +256,8 @@ export async function getPublicStatusData(kv: KVNamespace | undefined): Promise<
       lastStatusChangeAt: matchedStateItem?.lastStatusChangeAt || now,
       history: productHistory,
       uptimePercentage24h: calculateUptimePercentage(productHistory, 24 * 3600 * 1000, now),
-      uptimePercentage7d: calculateUptimePercentage(productHistory, 7 * 24 * 3600 * 1000, now)
+      uptimePercentage7d: calculateUptimePercentage(productHistory, 7 * 24 * 3600 * 1000, now),
+      uptimePercentage30d: calculateUptimePercentage(productHistory, 30 * 24 * 3600 * 1000, now)
     });
   }
 
@@ -577,8 +578,8 @@ export async function runScan(
             available: isCurrentlyInStock,
             quantity: product.inventoryQuantity
           });
-          // Prune intervals older than 14 days to keep KV value ultra-compact
-          const cutoff = now - (14 * 24 * 3600 * 1000);
+          // Prune intervals older than 35 days to preserve a full 1-month rolling availability window
+          const cutoff = now - (35 * 24 * 3600 * 1000);
           stockHistory[product.id] = intervals.filter(iv => (iv.to || now) > cutoff);
           historyChanged = true;
         } else if (lastInterval && lastInterval.quantity !== product.inventoryQuantity && isCurrentlyInStock) {

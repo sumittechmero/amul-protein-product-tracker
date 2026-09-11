@@ -135,6 +135,7 @@ export interface PublicProductStatus {
   history: StockHistoryInterval[];
   uptimePercentage24h: number;
   uptimePercentage7d: number;
+  uptimePercentage30d: number;
 }
 
 export interface PublicStatusResponse {
