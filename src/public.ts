@@ -367,6 +367,11 @@ export function getPublicHtml(): string {
       renderFilteredProducts();
     }
 
+    function resetFilter() {
+      clearSearch();
+      setStatusFilter('all');
+    }
+
     async function loadPublicStatus() {
       var icon = document.getElementById('refreshIcon');
       if (icon) icon.classList.add('fa-spin');
@@ -444,7 +449,7 @@ export function getPublicHtml(): string {
         container.innerHTML = '<div class="swiss-card p-12 rounded-xl border border-[#232733] text-center text-[#717686] space-y-2">' +
           '<p class="text-sm font-bold text-white uppercase font-mono">NO ITEMS MATCH SEARCH CRITERIA</p>' +
           '<p class="text-xs text-[#717686]">Clear the search input or select "ALL" filter tab.</p>' +
-          '<button onclick="clearSearch(); setStatusFilter(\\'all\\');" class="mt-3 text-xs font-mono font-bold bg-[#1b1e27] hover:bg-[#232733] text-white px-4 py-2 rounded transition">RESET FILTER</button>' +
+          '<button onclick="resetFilter()" class="mt-3 text-xs font-mono font-bold bg-[#1b1e27] hover:bg-[#232733] text-white px-4 py-2 rounded transition">RESET FILTER</button>' +
         '</div>';
         return;
       }
@@ -488,9 +493,12 @@ export function getPublicHtml(): string {
               '<i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>' +
             '</a>';
 
+        var imgSafeUrl = p.imageUrl || '';
+        var imgSafeName = (p.name || '').replace(/"/g, '&quot;');
+
         var imgHtml = p.imageUrl
-          ? '<div class="relative w-16 h-16 sm:w-20 sm:h-20 min-w-[64px] sm:min-w-[80px] rounded-lg bg-[#0b0c10] border border-[#232733] p-1.5 flex items-center justify-center overflow-hidden group cursor-pointer shrink-0 transition hover:border-[#383e52]" onclick="openLightbox(\'' + (p.imageUrl || '').replace(/'/g, "\\'") + '\', \'' + (p.name || '').replace(/'/g, "\\'") + '\')">' +
-              '<img src="' + p.imageUrl + '" alt="" class="w-full h-full object-contain rounded transition duration-200 group-hover:scale-105" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML=\\'<i class=\"fa-solid fa-bottle-droplet text-[#ff3c00] text-xl\"></i>\\';" />' +
+          ? '<div class="relative w-16 h-16 sm:w-20 sm:h-20 min-w-[64px] sm:min-w-[80px] rounded-lg bg-[#0b0c10] border border-[#232733] p-1.5 flex items-center justify-center overflow-hidden group cursor-pointer shrink-0 transition hover:border-[#383e52]" data-img="' + imgSafeUrl + '" data-name="' + imgSafeName + '" onclick="handleImageClick(this)">' +
+              '<img src="' + p.imageUrl + '" alt="" class="w-full h-full object-contain rounded transition duration-200 group-hover:scale-105" loading="lazy" onerror="handleImgError(this)" />' +
               '<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white text-xs">' +
                 '<i class="fa-solid fa-magnifying-glass-plus"></i>' +
               '</div>' +
@@ -554,6 +562,19 @@ export function getPublicHtml(): string {
       container.innerHTML = html;
     }
 
+    function handleImageClick(el) {
+      var url = el.getAttribute('data-img');
+      var name = el.getAttribute('data-name');
+      openLightbox(url, name);
+    }
+
+    function handleImgError(el) {
+      el.onerror = null;
+      if (el.parentElement) {
+        el.parentElement.innerHTML = '<i class="fa-solid fa-bottle-droplet text-[#ff3c00] text-xl"></i>';
+      }
+    }
+
     function generate30DayTimelineBars(history, now, currentInStock, currentQty) {
       var daysCount = 30;
       var dayMs = 24 * 3600 * 1000;
@@ -605,9 +626,11 @@ export function getPublicHtml(): string {
 
         var isToday = (i === daysCount - 1);
         var tooltipText = dateStr + (isToday ? ' (Today)' : '') + ' — ' + statusDesc;
+        var safeTip = tooltipText.replace(/"/g, '&quot;');
 
         segmentsHtml += '<div class="timeline-segment ' + colorClass + '" ' +
-          'onmouseenter="showTooltip(event, \'' + tooltipText.replace(/'/g, "\\'") + '\')" ' +
+          'data-tip="' + safeTip + '" ' +
+          'onmouseenter="showTooltipFromEl(event, this)" ' +
           'onmouseleave="hideTooltip()">' +
         '</div>';
       }
@@ -649,15 +672,22 @@ export function getPublicHtml(): string {
         var dateObj = new Date(segStart);
         var timeLabel = dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
         var tooltipText = timeLabel + ' — ' + (wasInStock ? 'In Stock (' + lastQty + ' units)' : 'Out of Stock');
+        var safeTip = tooltipText.replace(/"/g, '&quot;');
         var colorClass = wasInStock ? 'bg-[#00e676] hover:bg-[#10ff8b]' : 'bg-[#1a1d26] hover:bg-[#252936]';
 
         segmentsHtml += '<div class="timeline-segment ' + colorClass + '" ' +
-          'onmouseenter="showTooltip(event, \'' + tooltipText.replace(/'/g, "\\'") + '\')" ' +
+          'data-tip="' + safeTip + '" ' +
+          'onmouseenter="showTooltipFromEl(event, this)" ' +
           'onmouseleave="hideTooltip()">' +
         '</div>';
       }
 
       return segmentsHtml;
+    }
+
+    function showTooltipFromEl(e, el) {
+      var text = el.getAttribute('data-tip') || '';
+      showTooltip(e, text);
     }
 
     function showTooltip(e, text) {
