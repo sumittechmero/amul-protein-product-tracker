@@ -1,222 +1,370 @@
 /**
- * Serves the responsive, modern Public Status Page Single Page Application (unauthenticated).
+ * Serves the modern, high-contrast Public Status Page Single Page Application.
+ * Designed with Swiss Typographic Style (International Typographic Style),
+ * structured geometric grid layout, high-visibility signal accents,
+ * zero admin references, mobile-first responsiveness, live search & filtering,
+ * 30-day uptime timeline bars, and product image lightbox.
  */
 export function getPublicHtml(): string {
   return `<!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<html lang="en" class="h-full bg-[#0a0b0e] text-[#f4f4f5]">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Amul Protein Stock Tracker — Live Availability & 30-Day History</title>
+  <title>Amul Protein Stock Radar — Real-Time Availability & 30-Day Uptime</title>
+  
+  <!-- Swiss & Monospace Typography: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'Menlo', 'monospace']
+          },
           colors: {
-            brand: {
-              50: '#f0fdf4',
-              500: '#22c55e',
-              600: '#16a34a',
-              700: '#15803d',
+            swiss: {
+              vermilion: '#ff3c00',
+              accent: '#ff5018',
+              surface: '#12141a',
+              card: '#161922',
+              border: '#232734',
+              muted: '#717686',
+              light: '#f4f4f6'
             }
           }
         }
       }
     }
   </script>
+
   <style>
     [x-cloak] { display: none !important; }
-    .glass {
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+    
+    /* Architectural background grid lines */
+    body {
+      background-color: #0b0c10;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 36px 36px;
     }
+
+    /* Swiss modular card design */
+    .swiss-card {
+      background: #111319;
+      border: 1px solid #232733;
+      transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+    .swiss-card:hover {
+      border-color: #383e52;
+    }
+
+    /* Timeline Bar styles */
     .timeline-bar {
       display: flex;
       gap: 3px;
-      height: 28px;
+      height: 24px;
       align-items: stretch;
     }
     .timeline-segment {
       flex: 1;
-      border-radius: 3px;
+      border-radius: 2px;
       transition: transform 0.15s ease, opacity 0.15s ease;
       cursor: pointer;
     }
     .timeline-segment:hover {
-      transform: scaleY(1.25);
-      z-index: 10;
+      transform: scaleY(1.35);
+      z-index: 20;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0c10;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #232733;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #383e52;
     }
   </style>
 </head>
-<body class="min-h-full flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-white bg-slate-950 text-slate-100">
+<body class="min-h-full flex flex-col font-sans antialiased text-[#f4f4f5] selection:bg-[#ff3c00] selection:text-white">
 
-  <!-- TOP HEADER -->
-  <header class="glass sticky top-0 z-50 border-b border-slate-800 px-4 sm:px-8 py-3.5 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-        <i class="fa-solid fa-bottle-droplet text-white text-lg"></i>
+  <!-- TOP APP BAR -->
+  <header class="sticky top-0 z-40 border-b border-[#232733] bg-[#0b0c10]/95 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between">
+    <div class="flex items-center gap-3.5">
+      <!-- Minimalist Swiss Emblem -->
+      <div class="w-9 h-9 bg-[#ff3c00] text-white flex items-center justify-center font-black text-sm tracking-tighter rounded-md shrink-0 shadow-sm shadow-[#ff3c00]/30">
+        AM
       </div>
       <div>
         <div class="flex items-center gap-2">
-          <h1 class="font-bold text-lg text-white leading-tight">Amul Protein Tracker</h1>
-          <span class="text-[10px] uppercase font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded">Live Status</span>
+          <span class="font-extrabold text-base sm:text-lg text-white tracking-tight uppercase">Amul // Protein Radar</span>
+          <span class="inline-flex items-center gap-1 text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> LIVE
+          </span>
         </div>
-        <p class="text-xs text-slate-400">Real-Time Stock Availability & Restock Monitor</p>
+        <p class="text-[11px] font-mono text-[#717686] tracking-wider uppercase hidden sm:block">Automated 10m Continuous Warehouse Inventory Tracker</p>
       </div>
     </div>
 
-    <!-- Right Header Actions -->
-    <div class="flex items-center gap-3">
-      <!-- Live Pulse Indicator -->
-      <div class="hidden sm:flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-medium">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span id="headerStatusText" class="text-slate-300">Continuous 10m Monitor</span>
+    <!-- Header Actions (NO ADMIN MENTION) -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- Last Sync Timestamp Pill -->
+      <div class="hidden md:flex items-center gap-2 bg-[#12141a] border border-[#232733] px-3 py-1.5 rounded-md text-xs font-mono text-[#717686]">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span id="navLastCheck">SYNCING...</span>
       </div>
 
-      <!-- Refresh button -->
-      <button type="button" onclick="loadPublicStatus()" id="btnRefresh" title="Refresh live stock" class="p-2 text-slate-400 hover:text-white bg-slate-900 border border-slate-800 rounded-lg hover:border-slate-700 transition active:scale-95">
-        <i id="refreshIcon" class="fa-solid fa-rotate text-sm"></i>
+      <!-- Live Refresh Button -->
+      <button type="button" onclick="loadPublicStatus()" id="btnRefresh" title="Refresh Live Data" class="inline-flex items-center gap-2 bg-[#12141a] hover:bg-[#1b1e27] text-white border border-[#232733] hover:border-[#383e52] px-3.5 py-1.5 rounded-md text-xs font-mono font-semibold transition active:scale-95">
+        <i id="refreshIcon" class="fa-solid fa-rotate text-xs text-[#ff3c00]"></i>
+        <span class="hidden sm:inline">REFRESH</span>
       </button>
 
-      <!-- Admin Portal Link -->
-      <a href="/admin" class="flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3.5 py-2 rounded-lg transition">
-        <i class="fa-solid fa-lock text-slate-400 text-xs"></i>
-        <span>Admin Portal</span>
+      <!-- Amul Official Shop Link -->
+      <a href="https://shop.amul.com/en/browse/protein" target="_blank" class="inline-flex items-center gap-1.5 bg-[#ff3c00] hover:bg-[#e03500] text-white px-3.5 py-1.5 rounded-md text-xs font-mono font-bold tracking-wider uppercase transition shadow-sm">
+        <span>STORE</span>
+        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
       </a>
     </div>
   </header>
 
   <!-- MAIN CONTAINER -->
-  <main class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-8 space-y-6">
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-8 space-y-6 sm:space-y-8">
 
-    <!-- HERO OVERVIEW BANNER -->
-    <div class="glass p-6 sm:p-8 rounded-3xl border border-slate-800 relative overflow-hidden">
-      <div class="absolute -right-16 -bottom-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-      
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <div>
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-slate-900 border border-slate-800 text-slate-300 mb-3">
-            <span id="heroPulse" class="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span id="heroStatusSummary">Checking inventory across Amul stores...</span>
-          </div>
-          <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Amul Protein Products Status</h2>
-          <p class="text-sm text-slate-400 mt-1 max-w-xl">
-            Live stock monitor for Amul Protein Lassi, Buttermilk, Blueberry Shake, and Whey. Updates automatically every 10 minutes directly from official store inventories.
-          </p>
+    <!-- HERO SECTION (Swiss Typographic Masthead) -->
+    <div class="swiss-card p-6 sm:p-8 rounded-xl border border-[#232733] relative overflow-hidden">
+      <!-- Corner indexing tag -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#232733] text-[11px] font-mono font-semibold uppercase tracking-wider text-[#717686]">
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 bg-[#1b1e27] border border-[#2a2f3f] text-[#a1a7b8] rounded">REG // GUJARAT</span>
+          <span class="px-2 py-0.5 bg-emerald-950/40 border border-emerald-800/50 text-emerald-400 rounded flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> ACTIVE TELEMETRY
+          </span>
         </div>
-
-        <div class="flex items-center gap-4 text-xs font-medium self-start md:self-auto">
-          <div class="text-right">
-            <span class="text-slate-500 block text-[11px] uppercase tracking-wider">Last Checked</span>
-            <span id="heroLastCheck" class="text-slate-200 font-mono font-semibold">Updating...</span>
-          </div>
-        </div>
+        <div id="heroLastCheck" class="text-white font-bold">UPDATING...</div>
       </div>
 
-      <!-- METRIC CARDS ROW -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-6 border-t border-slate-800/80">
-        <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80">
-          <span class="text-[11px] uppercase font-semibold text-slate-400 block mb-1">Tracked Items</span>
-          <span id="statTracked" class="text-xl sm:text-2xl font-bold text-white font-mono">--</span>
-          <span class="text-[10px] text-slate-500 block mt-0.5">Active monitoring</span>
+      <!-- Large Bold Title -->
+      <div class="mt-6 space-y-3">
+        <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight text-white leading-none">
+          Amul High Protein<br/>
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff3c00] via-[#ff7300] to-[#00e676]">Inventory Radar</span>
+        </h1>
+        <p class="text-sm sm:text-base text-[#a1a7b8] max-w-2xl font-normal leading-relaxed">
+          Automated edge tracking for Amul High Protein Lassi, Buttermilk, Blueberry Shake, and Whey. Directly synchronized with official warehouse stock every 10 minutes with complete 30-day uptime records.
+        </p>
+      </div>
+
+      <!-- 4-MODULAR METRICS STRIP (Swiss Grid) -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-8 pt-6 border-t border-[#232733]">
+        <!-- In Stock Products -->
+        <div class="bg-[#0e1015] p-4 rounded-lg border border-[#232733]">
+          <span class="text-[10px] font-mono uppercase font-bold tracking-widest text-[#717686] block">01 // IN STOCK</span>
+          <div class="flex items-baseline gap-1.5 mt-1">
+            <span id="statInStock" class="text-2xl sm:text-3xl font-black font-mono text-[#00e676]">--</span>
+            <span id="statInStockTotal" class="text-xs font-mono text-[#717686]">/ --</span>
+          </div>
+          <p class="text-[11px] font-mono text-[#717686] mt-1">Ready for purchase</p>
         </div>
 
-        <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80">
-          <span class="text-[11px] uppercase font-semibold text-slate-400 block mb-1">In Stock Now</span>
-          <span id="statInStock" class="text-xl sm:text-2xl font-bold text-emerald-400 font-mono">--</span>
-          <span class="text-[10px] text-emerald-500/80 block mt-0.5">Ready to order</span>
+        <!-- Total Units in Warehouse -->
+        <div class="bg-[#0e1015] p-4 rounded-lg border border-[#232733]">
+          <span class="text-[10px] font-mono uppercase font-bold tracking-widest text-[#717686] block">02 // TOTAL UNITS</span>
+          <div id="statTotalUnits" class="text-2xl sm:text-3xl font-black font-mono text-white mt-1">--</div>
+          <p class="text-[11px] font-mono text-[#717686] mt-1">Warehouse stock units</p>
         </div>
 
-        <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80">
-          <span class="text-[11px] uppercase font-semibold text-slate-400 block mb-1">30-Day Uptime</span>
-          <span id="statUptime30d" class="text-xl sm:text-2xl font-bold text-sky-400 font-mono">--%</span>
-          <span class="text-[10px] text-slate-500 block mt-0.5">1-month availability</span>
+        <!-- 30-Day Avg Uptime -->
+        <div class="bg-[#0e1015] p-4 rounded-lg border border-[#232733]">
+          <span class="text-[10px] font-mono uppercase font-bold tracking-widest text-[#717686] block">03 // 30D UPTIME</span>
+          <div id="statUptime30d" class="text-2xl sm:text-3xl font-black font-mono text-[#38bdf8] mt-1">--%</div>
+          <p class="text-[11px] font-mono text-[#717686] mt-1">1-month availability</p>
         </div>
 
-        <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80">
-          <span class="text-[11px] uppercase font-semibold text-slate-400 block mb-1">Check Frequency</span>
-          <span class="text-xl sm:text-2xl font-bold text-teal-300 font-mono">10m</span>
-          <span class="text-[10px] text-slate-500 block mt-0.5">Global edge cron (10 min)</span>
+        <!-- Cycle Frequency -->
+        <div class="bg-[#0e1015] p-4 rounded-lg border border-[#232733]">
+          <span class="text-[10px] font-mono uppercase font-bold tracking-widest text-[#717686] block">04 // SCAN CYCLE</span>
+          <div class="text-2xl sm:text-3xl font-black font-mono text-white mt-1">10 MIN</div>
+          <p class="text-[11px] font-mono text-[#717686] mt-1">Cloudflare Edge Cron</p>
         </div>
       </div>
     </div>
 
-    <!-- PRODUCTS LIST WITH AVAILABILITY TIMELINE GRAPHS -->
+    <!-- SWISS CONTROL STRIP: SEARCH & FILTERS -->
+    <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-[#111319] p-3 rounded-xl border border-[#232733]">
+      <!-- Search Input -->
+      <div class="relative flex-1">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-[#717686] text-xs pointer-events-none"></i>
+        <input type="text" id="searchInput" oninput="handleSearch(event)" placeholder="Search products, flavors, packs (e.g. lassi, buttermilk, blueberry)..." class="w-full bg-[#0b0c10] border border-[#232733] rounded-lg pl-9 pr-8 py-2 text-xs sm:text-sm text-white placeholder-[#717686] focus:outline-none focus:border-[#ff3c00] transition font-sans">
+        <button type="button" id="btnClearSearch" onclick="clearSearch()" class="hidden absolute right-3 top-2.5 text-[#717686] hover:text-white text-xs">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Status Filter Buttons -->
+      <div class="flex items-center gap-1 bg-[#0b0c10] p-1 rounded-lg border border-[#232733] text-xs font-mono font-bold">
+        <button type="button" onclick="setStatusFilter('all')" id="filterBtn-all" class="filter-tab-btn active px-3 py-1.5 rounded bg-[#232733] text-white transition">
+          ALL (<span id="countFilterAll">0</span>)
+        </button>
+        <button type="button" onclick="setStatusFilter('in_stock')" id="filterBtn-in_stock" class="filter-tab-btn px-3 py-1.5 rounded text-[#717686] hover:text-white transition">
+          IN STOCK (<span id="countFilterInStock">0</span>)
+        </button>
+        <button type="button" onclick="setStatusFilter('out_of_stock')" id="filterBtn-out_of_stock" class="filter-tab-btn px-3 py-1.5 rounded text-[#717686] hover:text-white transition">
+          OUT OF STOCK (<span id="countFilterOOS">0</span>)
+        </button>
+      </div>
+
+      <!-- Timeline Duration Switcher -->
+      <div class="flex items-center gap-1 bg-[#0b0c10] p-1 rounded-lg border border-[#232733] text-xs font-mono font-bold">
+        <button type="button" onclick="setTimelineMode('30d')" id="timelineBtn-30d" class="timeline-tab-btn px-3 py-1.5 rounded bg-[#ff3c00] text-white transition">
+          30 DAYS
+        </button>
+        <button type="button" onclick="setTimelineMode('24h')" id="timelineBtn-24h" class="timeline-tab-btn px-3 py-1.5 rounded text-[#717686] hover:text-white transition">
+          24 HOURS
+        </button>
+      </div>
+    </div>
+
+    <!-- PRODUCTS AVAILABILITY LIST SECTION -->
     <div class="space-y-4">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h3 class="font-bold text-lg text-white">Target Products Availability</h3>
-          <p class="text-xs text-slate-400">Current inventory level and historical uptime availability timeline</p>
+      <!-- Section Header -->
+      <div class="flex items-center justify-between text-xs font-mono text-[#717686] px-1 uppercase">
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-white tracking-wider">TRACKED CATALOG ITEMS</span>
+          <span id="resultsCountBadge" class="bg-[#1b1e27] border border-[#232733] text-[#a1a7b8] text-[10px] px-2 py-0.5 rounded">0 ITEMS</span>
         </div>
-        <div class="flex items-center gap-4 text-xs text-slate-400">
+        <!-- Legend Indicator -->
+        <div class="hidden sm:flex items-center gap-4 text-[11px]">
           <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span>
-            <span>In Stock</span>
+            <span class="w-2.5 h-2.5 rounded-sm bg-[#00e676]"></span>
+            <span>100% In Stock</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-sm bg-amber-400"></span>
+            <span class="w-2.5 h-2.5 rounded-sm bg-[#ffb703]"></span>
             <span>Partial Stock</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-sm bg-slate-800 border border-slate-700"></span>
+            <span class="w-2.5 h-2.5 rounded-sm bg-[#1e222d] border border-[#2f3545]"></span>
             <span>Out of Stock</span>
           </div>
         </div>
       </div>
 
-      <!-- Dynamic Product Cards Grid -->
+      <!-- Dynamic Product Cards Container -->
       <div id="publicProductsContainer" class="space-y-4">
-        <div class="glass p-12 rounded-3xl border border-slate-800 text-center text-slate-400">
-          <i class="fa-solid fa-spinner fa-spin text-2xl text-emerald-400 mb-3"></i>
-          <p class="text-sm">Fetching live Amul store availability and history...</p>
+        <div class="swiss-card p-12 rounded-xl border border-[#232733] text-center text-[#717686] space-y-3">
+          <i class="fa-solid fa-spinner fa-spin text-2xl text-[#ff3c00]"></i>
+          <p class="text-xs font-mono uppercase tracking-widest">Connecting to Amul Store API...</p>
         </div>
       </div>
     </div>
 
     <!-- TIMELINE TOOLTIP POPUP -->
-    <div id="timelineTooltip" class="fixed hidden z-50 pointer-events-none bg-slate-900/95 border border-slate-700 px-3 py-2 rounded-xl text-xs shadow-2xl text-slate-200 backdrop-blur-md"></div>
+    <div id="timelineTooltip" class="fixed hidden z-50 pointer-events-none bg-[#111319] border border-[#383e52] px-3 py-2 rounded text-xs shadow-2xl text-white font-mono leading-tight"></div>
 
-    <!-- PRODUCT IMAGE LIGHTBOX MODAL -->
-    <div id="lightboxModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onclick="closeLightbox()">
-      <div class="relative max-w-lg w-full glass p-4 rounded-3xl border border-slate-700 text-center space-y-3" onclick="event.stopPropagation()">
-        <div class="flex items-center justify-between px-2">
-          <h4 id="lightboxTitle" class="text-sm font-bold text-white truncate max-w-[85%] text-left"></h4>
-          <button onclick="closeLightbox()" class="text-slate-400 hover:text-white text-base"><i class="fa-solid fa-xmark"></i></button>
+    <!-- IMAGE LIGHTBOX MODAL -->
+    <div id="lightboxModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeLightbox()">
+      <div class="relative max-w-lg w-full bg-[#111319] border border-[#383e52] p-5 rounded-xl text-center space-y-4 shadow-2xl" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between px-1 border-b border-[#232733] pb-3">
+          <h4 id="lightboxTitle" class="text-sm font-bold text-white truncate max-w-[85%] text-left font-sans"></h4>
+          <button onclick="closeLightbox()" class="text-[#717686] hover:text-white p-1 rounded hover:bg-[#1b1e27] transition"><i class="fa-solid fa-xmark text-base"></i></button>
         </div>
-        <div class="bg-slate-900/90 rounded-2xl p-4 flex items-center justify-center max-h-[70vh] border border-slate-800">
-          <img id="lightboxImg" src="" alt="Product" class="max-h-[60vh] max-w-full object-contain rounded-xl" />
+        <div class="bg-[#0b0c10] rounded-lg p-6 flex items-center justify-center max-h-[65vh] border border-[#232733]">
+          <img id="lightboxImg" src="" alt="Product" class="max-h-[55vh] max-w-full object-contain rounded drop-shadow-xl" />
         </div>
+        <p class="text-[10px] font-mono uppercase tracking-wider text-[#717686]">Press Escape or click outside to dismiss</p>
       </div>
     </div>
 
   </main>
 
-  <!-- FOOTER -->
-  <footer class="mt-auto border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
-    <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-      <p>Amul High Protein Stock Tracker • Automated Cloudflare Edge Scanner (10m Cron)</p>
-      <div class="flex items-center gap-4 text-slate-400">
-        <a href="https://shop.amul.com/en/browse/protein" target="_blank" class="hover:text-emerald-400 transition">Shop Amul Protein ↗</a>
-        <a href="/admin" class="hover:text-white transition flex items-center gap-1"><i class="fa-solid fa-lock text-[10px]"></i> Admin Login</a>
+  <!-- FOOTER (NO ADMIN MENTION) -->
+  <footer class="mt-auto border-t border-[#232733] py-8 text-center text-xs text-[#717686] bg-[#0b0c10]">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-[#00e676]"></span>
+        <p class="uppercase tracking-wider text-[11px]">Amul High Protein Stock Radar // 10-Minute Cloud Edge</p>
+      </div>
+      <div class="flex items-center gap-4 text-white font-semibold">
+        <a href="https://shop.amul.com/en/browse/protein" target="_blank" class="hover:text-[#ff3c00] transition flex items-center gap-1.5 uppercase text-[11px]">
+          <span>Shop Official Amul Store</span>
+          <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+        </a>
       </div>
     </div>
   </footer>
 
   <!-- CLIENT SCRIPT -->
   <script>
+    var rawProducts = [];
     var publicData = null;
     var refreshTimer = null;
     var activeTimelineMode = '30d';
+    var activeStatusFilter = 'all';
+    var searchQuery = '';
 
     function setTimelineMode(mode) {
       activeTimelineMode = mode;
-      if (publicData) renderPublicView(publicData);
+      var btn30 = document.getElementById('timelineBtn-30d');
+      var btn24 = document.getElementById('timelineBtn-24h');
+      if (mode === '30d') {
+        btn30.className = 'timeline-tab-btn px-3 py-1.5 rounded bg-[#ff3c00] text-white transition';
+        btn24.className = 'timeline-tab-btn px-3 py-1.5 rounded text-[#717686] hover:text-white transition';
+      } else {
+        btn24.className = 'timeline-tab-btn px-3 py-1.5 rounded bg-[#ff3c00] text-white transition';
+        btn30.className = 'timeline-tab-btn px-3 py-1.5 rounded text-[#717686] hover:text-white transition';
+      }
+      renderFilteredProducts();
+    }
+
+    function setStatusFilter(filter) {
+      activeStatusFilter = filter;
+      document.querySelectorAll('.filter-tab-btn').forEach(function(btn) {
+        btn.className = 'filter-tab-btn px-3 py-1.5 rounded text-[#717686] hover:text-white transition';
+      });
+      var activeBtn = document.getElementById('filterBtn-' + filter);
+      if (activeBtn) {
+        activeBtn.className = 'filter-tab-btn active px-3 py-1.5 rounded bg-[#232733] text-white transition';
+      }
+      renderFilteredProducts();
+    }
+
+    function handleSearch(e) {
+      searchQuery = (e.target.value || '').trim().toLowerCase();
+      var clearBtn = document.getElementById('btnClearSearch');
+      if (searchQuery) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+      renderFilteredProducts();
+    }
+
+    function clearSearch() {
+      var input = document.getElementById('searchInput');
+      if (input) input.value = '';
+      searchQuery = '';
+      document.getElementById('btnClearSearch').classList.add('hidden');
+      renderFilteredProducts();
     }
 
     async function loadPublicStatus() {
@@ -224,10 +372,12 @@ export function getPublicHtml(): string {
       if (icon) icon.classList.add('fa-spin');
 
       try {
-        var res = await fetch('/api/public/status');
+        var res = await fetch('/api/public/status?t=' + Date.now());
         if (!res.ok) throw new Error('HTTP ' + res.status);
         publicData = await res.json();
-        renderPublicView(publicData);
+        rawProducts = publicData.products || [];
+        updateHeroAndMetrics(publicData);
+        renderFilteredProducts();
       } catch (err) {
         console.error('Failed to load public status:', err);
       } finally {
@@ -235,121 +385,166 @@ export function getPublicHtml(): string {
       }
     }
 
-    function renderPublicView(data) {
+    function updateHeroAndMetrics(data) {
       if (!data || !data.products) return;
 
-      document.getElementById('statTracked').innerText = data.totalTracked;
-      document.getElementById('statInStock').innerText = data.totalInStock;
+      var totalTracked = data.products.length;
+      var inStockCount = data.products.filter(function(p) { return p.available && p.inventoryQuantity > 0; }).length;
+      var oosCount = totalTracked - inStockCount;
 
-      var heroPulse = document.getElementById('heroPulse');
-      var heroSummary = document.getElementById('heroStatusSummary');
-      if (data.totalInStock > 0) {
-        heroPulse.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
-        heroSummary.innerText = data.totalInStock + ' of ' + data.totalTracked + ' tracked items in stock right now!';
-      } else {
-        heroPulse.className = 'w-2 h-2 rounded-full bg-rose-400';
-        heroSummary.innerText = 'All tracked items currently out of stock. Monitoring continuously...';
-      }
+      var totalUnits = data.products.reduce(function(acc, p) {
+        return acc + (p.available ? (p.inventoryQuantity || 0) : 0);
+      }, 0);
+
+      document.getElementById('statInStock').innerText = inStockCount;
+      document.getElementById('statInStockTotal').innerText = '/ ' + totalTracked;
+      document.getElementById('statTotalUnits').innerText = totalUnits.toLocaleString('en-IN');
+
+      // Filter badges count
+      document.getElementById('countFilterAll').innerText = totalTracked;
+      document.getElementById('countFilterInStock').innerText = inStockCount;
+      document.getElementById('countFilterOOS').innerText = oosCount;
 
       if (data.lastScanTimestamp) {
         var d = new Date(data.lastScanTimestamp);
-        document.getElementById('heroLastCheck').innerText = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }) + ' IST';
+        var timeStr = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }) + ' IST';
+        document.getElementById('heroLastCheck').innerText = 'SYNCED ' + timeStr;
+        document.getElementById('navLastCheck').innerText = timeStr;
       } else {
-        document.getElementById('heroLastCheck').innerText = 'Just now';
+        document.getElementById('heroLastCheck').innerText = 'SYNCED JUST NOW';
+        document.getElementById('navLastCheck').innerText = 'JUST NOW';
       }
 
       var uptimes30d = data.products.map(function(p) { return p.uptimePercentage30d || 0; });
       var avgUptime30d = uptimes30d.length > 0 ? (uptimes30d.reduce(function(a, b) { return a + b; }, 0) / uptimes30d.length).toFixed(1) : 100;
       document.getElementById('statUptime30d').innerText = avgUptime30d + '%';
+    }
 
+    function renderFilteredProducts() {
       var container = document.getElementById('publicProductsContainer');
-      if (data.products.length === 0) {
-        container.innerHTML = '<div class="glass p-8 rounded-2xl text-center text-slate-400">No tracked products found.</div>';
+      var badge = document.getElementById('resultsCountBadge');
+
+      var filtered = rawProducts.filter(function(p) {
+        var inStock = p.available && p.inventoryQuantity > 0;
+        if (activeStatusFilter === 'in_stock' && !inStock) return false;
+        if (activeStatusFilter === 'out_of_stock' && inStock) return false;
+
+        if (searchQuery) {
+          var nameMatches = (p.name || '').toLowerCase().indexOf(searchQuery) >= 0;
+          var aliasMatches = (p.alias || '').toLowerCase().indexOf(searchQuery) >= 0;
+          var ruleMatches = (p.matchedRuleName || '').toLowerCase().indexOf(searchQuery) >= 0;
+          if (!nameMatches && !aliasMatches && !ruleMatches) return false;
+        }
+        return true;
+      });
+
+      if (badge) badge.innerText = filtered.length + ' OF ' + rawProducts.length + ' ITEMS';
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="swiss-card p-12 rounded-xl border border-[#232733] text-center text-[#717686] space-y-2">' +
+          '<p class="text-sm font-bold text-white uppercase font-mono">NO ITEMS MATCH SEARCH CRITERIA</p>' +
+          '<p class="text-xs text-[#717686]">Clear the search input or select "ALL" filter tab.</p>' +
+          '<button onclick="clearSearch(); setStatusFilter(\\'all\\');" class="mt-3 text-xs font-mono font-bold bg-[#1b1e27] hover:bg-[#232733] text-white px-4 py-2 rounded transition">RESET FILTER</button>' +
+        '</div>';
         return;
       }
 
       var now = Date.now();
       var html = '';
 
-      for (var i = 0; i < data.products.length; i++) {
-        var p = data.products[i];
+      for (var i = 0; i < filtered.length; i++) {
+        var p = filtered[i];
         var inStock = p.available && p.inventoryQuantity > 0;
+        var indexNum = String(i + 1).padStart(2, '0');
+
         var timelineHtml = activeTimelineMode === '30d'
           ? generate30DayTimelineBars(p.history, now, inStock, p.inventoryQuantity)
           : generate24HourTimelineBars(p.history, now, inStock, p.inventoryQuantity);
 
         var axisLabels = activeTimelineMode === '30d'
-          ? '<span>30 days ago</span><span>15 days ago</span><span>Today</span>'
-          : '<span>24 hours ago</span><span>12 hours ago</span><span>Now (Latest)</span>';
+          ? '<span>30 DAYS AGO</span><span>15 DAYS AGO</span><span>TODAY (LIVE)</span>'
+          : '<span>24 HOURS AGO</span><span>12 HOURS AGO</span><span>NOW (LIVE)</span>';
 
-        var modeTitle = activeTimelineMode === '30d' ? 'Past 30 Days (Daily Availability)' : 'Past 24 Hours (Detailed)';
-        var borderClass = inStock ? 'border-emerald-500/40 shadow-xl shadow-emerald-950/20' : 'border-slate-800';
+        var modeTitle = activeTimelineMode === '30d' ? '30-DAY DAILY TIMELINE' : '24-HOUR INTRADAY TIMELINE';
+        var borderClass = inStock
+          ? 'border-[#00e676]/40 shadow-sm'
+          : 'border-[#232733]';
+
         var stockBadge = inStock
-          ? '<span class="text-[11px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">● In Stock</span>'
-          : '<span class="text-[11px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30">○ Out of Stock</span>';
+          ? '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-mono font-bold uppercase bg-emerald-950/60 text-[#00e676] border border-[#00e676]/50">' +
+              '<span class="w-1.5 h-1.5 rounded-full bg-[#00e676] animate-pulse"></span> IN STOCK' +
+            '</span>'
+          : '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-mono font-bold uppercase bg-[#181a22] text-[#717686] border border-[#2a2f3f]">' +
+              '<span class="w-1.5 h-1.5 rounded-full bg-[#717686]"></span> OUT OF STOCK' +
+            '</span>';
 
         var buyBtn = inStock
-          ? '<a href="' + p.url + '" target="_blank" class="flex items-center gap-2 font-semibold text-xs px-4 py-2.5 rounded-xl transition bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-600/20"><span>Buy on Amul</span><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>'
-          : '<a href="' + p.url + '" target="_blank" class="flex items-center gap-2 font-semibold text-xs px-4 py-2.5 rounded-xl transition bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700"><span>View on Store</span><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>';
-
-        var btn30dClass = activeTimelineMode === '30d' ? 'bg-emerald-500 text-white font-bold shadow' : 'text-slate-400 hover:text-white';
-        var btn24hClass = activeTimelineMode === '24h' ? 'bg-emerald-500 text-white font-bold shadow' : 'text-slate-400 hover:text-white';
+          ? '<a href="' + p.url + '" target="_blank" class="inline-flex items-center justify-center gap-2 font-mono font-bold text-xs uppercase tracking-wider px-4 py-2.5 rounded transition bg-[#00e676] hover:bg-[#00c864] text-black shadow-md active:scale-95 shrink-0">' +
+              '<span>BUY ON AMUL</span>' +
+              '<i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>' +
+            '</a>'
+          : '<a href="' + p.url + '" target="_blank" class="inline-flex items-center justify-center gap-2 font-mono font-semibold text-xs uppercase tracking-wider px-4 py-2.5 rounded transition bg-[#1b1e27] hover:bg-[#232733] text-[#a1a7b8] hover:text-white border border-[#232733] shrink-0">' +
+              '<span>VIEW STORE</span>' +
+              '<i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>' +
+            '</a>';
 
         var imgHtml = p.imageUrl
-          ? '<div class="relative w-16 h-16 min-w-[64px] rounded-2xl bg-slate-900/90 border border-slate-700/80 p-1 flex items-center justify-center overflow-hidden group cursor-pointer shadow-md shrink-0" onclick="openLightbox(\'' + (p.imageUrl || '').replace(/'/g, "\\'") + '\', \'' + (p.name || '').replace(/'/g, "\\'") + '\')">' +
-              '<img src="' + p.imageUrl + '" alt="' + (p.name || '').replace(/"/g, '&quot;') + '" class="w-full h-full object-contain rounded-xl transition duration-200 group-hover:scale-105" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML=\'<i class=\\\'fa-solid fa-bottle-droplet text-emerald-400 text-2xl\\\'></i>\';" />' +
-              '<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white text-xs rounded-xl">' +
+          ? '<div class="relative w-16 h-16 sm:w-20 sm:h-20 min-w-[64px] sm:min-w-[80px] rounded-lg bg-[#0b0c10] border border-[#232733] p-1.5 flex items-center justify-center overflow-hidden group cursor-pointer shrink-0 transition hover:border-[#383e52]" onclick="openLightbox(\'' + (p.imageUrl || '').replace(/'/g, "\\'") + '\', \'' + (p.name || '').replace(/'/g, "\\'") + '\')">' +
+              '<img src="' + p.imageUrl + '" alt="" class="w-full h-full object-contain rounded transition duration-200 group-hover:scale-105" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML=\\'<i class=\"fa-solid fa-bottle-droplet text-[#ff3c00] text-xl\"></i>\\';" />' +
+              '<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white text-xs">' +
                 '<i class="fa-solid fa-magnifying-glass-plus"></i>' +
               '</div>' +
             '</div>'
-          : '<div class="w-16 h-16 min-w-[64px] rounded-2xl bg-slate-900 border border-slate-800 p-1 flex items-center justify-center text-emerald-400 shadow-md shrink-0">' +
-              '<i class="fa-solid fa-bottle-droplet text-2xl"></i>' +
+          : '<div class="w-16 h-16 sm:w-20 sm:h-20 min-w-[64px] sm:min-w-[80px] rounded-lg bg-[#0b0c10] border border-[#232733] p-1.5 flex items-center justify-center text-[#ff3c00] shrink-0">' +
+              '<i class="fa-solid fa-bottle-droplet text-xl"></i>' +
             '</div>';
 
-        html += '<div class="glass p-6 sm:p-7 rounded-3xl border ' + borderClass + ' transition hover:border-slate-700 space-y-5">' +
+        html += '<div class="swiss-card p-5 sm:p-6 rounded-xl border ' + borderClass + ' space-y-4">' +
+          '<div class="flex items-center justify-between border-b border-[#232733] pb-2 text-[10px] font-mono text-[#717686] uppercase">' +
+            '<span>ITEM #' + indexNum + ' // ' + (p.matchedRuleName || 'PROTEIN') + '</span>' +
+            '<span class="' + (inStock ? 'text-[#00e676] font-bold' : 'text-[#717686]') + '">' + (inStock ? p.inventoryQuantity + ' UNITS AVAILABLE' : 'CURRENTLY UNAVAILABLE') + '</span>' +
+          '</div>' +
+
           '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">' +
             '<div class="flex items-center gap-4 min-w-0">' +
               imgHtml +
-              '<div class="min-w-0">' +
-                '<div class="flex items-center gap-2 mb-1.5 flex-wrap">' +
+              '<div class="min-w-0 space-y-1">' +
+                '<div class="flex items-center gap-2 flex-wrap">' +
                   stockBadge +
-                  '<span class="text-xs text-slate-400 font-medium">' + (p.matchedRuleName || 'Protein') + '</span>' +
+                  (p.alias ? '<span class="text-[10px] font-mono text-[#717686] bg-[#0e1015] border border-[#232733] px-2 py-0.5 rounded">' + p.alias + '</span>' : '') +
                 '</div>' +
-                '<h4 class="font-bold text-base sm:text-lg text-white leading-snug truncate sm:whitespace-normal">' + p.name + '</h4>' +
+                '<h3 class="font-bold text-base sm:text-lg text-white leading-snug truncate sm:whitespace-normal tracking-tight">' + p.name + '</h3>' +
               '</div>' +
             '</div>' +
-            '<div class="flex items-center gap-3 self-start sm:self-auto shrink-0">' +
-              '<div class="text-right">' +
-                '<span class="text-xs text-slate-400 block text-[11px]">Price</span>' +
-                '<span class="text-lg font-bold text-white font-mono">₹' + p.price + '</span>' +
+
+            '<div class="flex items-center justify-between sm:justify-end gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#232733]">' +
+              '<div class="text-left sm:text-right font-mono">' +
+                '<span class="text-[10px] text-[#717686] block font-bold uppercase">PRICE</span>' +
+                '<span class="text-xl font-black text-white">₹' + (p.price || 0) + '</span>' +
               '</div>' +
               buyBtn +
             '</div>' +
           '</div>' +
-          '<div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 pt-1">' +
-            '<div class="flex flex-wrap items-center gap-3">' +
-              '<span>Units: <b class="font-mono ' + (inStock ? 'text-emerald-400' : 'text-slate-500') + '">' + p.inventoryQuantity + '</b></span>' +
-              '<span>•</span>' +
-              '<span>30d Uptime: <b class="font-mono text-emerald-400">' + (p.uptimePercentage30d || 0) + '%</b></span>' +
-              '<span>•</span>' +
-              '<span>7d: <b class="font-mono text-slate-300">' + (p.uptimePercentage7d || 0) + '%</b></span>' +
-              '<span>•</span>' +
-              '<span>24h: <b class="font-mono text-slate-300">' + (p.uptimePercentage24h || 0) + '%</b></span>' +
+
+          '<div class="bg-[#0b0c10] p-3 rounded-lg border border-[#232733] space-y-2">' +
+            '<div class="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-[#717686]">' +
+              '<div class="flex items-center gap-2 text-white font-semibold">' +
+                '<span>' + modeTitle + '</span>' +
+              '</div>' +
+              '<div class="flex items-center gap-3">' +
+                '<span>30D: <b class="text-[#00e676]">' + (p.uptimePercentage30d || 0) + '%</b></span>' +
+                '<span>•</span>' +
+                '<span>7D: <b class="text-white">' + (p.uptimePercentage7d || 0) + '%</b></span>' +
+                '<span>•</span>' +
+                '<span>24H: <b class="text-white">' + (p.uptimePercentage24h || 0) + '%</b></span>' +
+              '</div>' +
             '</div>' +
-            '<div class="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[11px]">' +
-              '<button type="button" onclick="setTimelineMode(\'30d\')" class="px-2.5 py-0.5 rounded-lg transition ' + btn30dClass + '">30 Days</button>' +
-              '<button type="button" onclick="setTimelineMode(\'24h\')" class="px-2.5 py-0.5 rounded-lg transition ' + btn24hClass + '">24 Hours</button>' +
-            '</div>' +
-          '</div>' +
-          '<div class="space-y-1.5">' +
-            '<div class="flex items-center justify-between text-[11px] text-slate-400">' +
-              '<span>' + modeTitle + '</span>' +
-              '<span class="font-mono text-[10px] text-slate-500">' + (activeTimelineMode === '30d' ? '30 daily blocks' : '48 segments (30m each)') + '</span>' +
-            '</div>' +
+
             '<div class="timeline-bar">' +
               timelineHtml +
             '</div>' +
-            '<div class="flex items-center justify-between text-[10px] text-slate-500 font-mono">' +
+
+            '<div class="flex items-center justify-between text-[10px] text-[#717686] font-mono pt-0.5">' +
               axisLabels +
             '</div>' +
           '</div>' +
@@ -396,16 +591,16 @@ export function getPublicHtml(): string {
         var dateObj = new Date(segStart);
         var dateStr = dateObj.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
 
-        var colorClass = 'bg-slate-800/90 hover:bg-slate-700';
+        var colorClass = 'bg-[#1a1d26] hover:bg-[#252936]';
         var statusDesc = 'Out of Stock (0%)';
 
         if (uptimePct >= 90) {
-          colorClass = 'bg-emerald-500';
+          colorClass = 'bg-[#00e676] hover:bg-[#10ff8b]';
           statusDesc = 'In Stock (100% of day' + (peakQty ? ', ' + peakQty + ' units' : '') + ')';
         } else if (uptimePct > 0) {
-          colorClass = 'bg-amber-400';
+          colorClass = 'bg-[#ffb703] hover:bg-[#ffc633]';
           var hours = Math.round((inStockMs / (3600 * 1000)) * 10) / 10;
-          statusDesc = 'Partial Stock (' + hours + 'h available, ' + uptimePct + '%' + (peakQty ? ', ' + peakQty + ' units' : '') + ')';
+          statusDesc = 'Partial Stock (' + hours + 'h, ' + uptimePct + '%' + (peakQty ? ', ' + peakQty + ' units' : '') + ')';
         }
 
         var isToday = (i === daysCount - 1);
@@ -454,7 +649,7 @@ export function getPublicHtml(): string {
         var dateObj = new Date(segStart);
         var timeLabel = dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
         var tooltipText = timeLabel + ' — ' + (wasInStock ? 'In Stock (' + lastQty + ' units)' : 'Out of Stock');
-        var colorClass = wasInStock ? 'bg-emerald-500' : 'bg-slate-800/90 hover:bg-slate-700';
+        var colorClass = wasInStock ? 'bg-[#00e676] hover:bg-[#10ff8b]' : 'bg-[#1a1d26] hover:bg-[#252936]';
 
         segmentsHtml += '<div class="timeline-segment ' + colorClass + '" ' +
           'onmouseenter="showTooltip(event, \'' + tooltipText.replace(/'/g, "\\'") + '\')" ' +
@@ -496,6 +691,10 @@ export function getPublicHtml(): string {
       var modal = document.getElementById('lightboxModal');
       if (modal) modal.classList.add('hidden');
     }
+
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeLightbox();
+    });
 
     document.addEventListener('DOMContentLoaded', function() {
       loadPublicStatus();
