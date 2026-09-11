@@ -141,7 +141,7 @@ Automated Continuous Integration and Continuous Deployment is configured via Git
 - **Trigger**: Every `git push origin main` or manual trigger via `workflow_dispatch`.
 - **Pipeline**:
   1. Checks out repository code.
-  2. Sets up Node.js 20 with dependency caching.
+  2. Sets up Node.js 22 with dependency caching.
   3. Installs dependencies via `npm ci`.
   4. Validates code integrity with `npm run typecheck` (`tsc --noEmit`).
   5. Deploys the worker to Cloudflare Workers via `cloudflare/wrangler-action@v3`.
