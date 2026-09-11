@@ -135,6 +135,24 @@ Open the URL in any browser to access your deployed Admin Panel!
 
 ---
 
+## Automated CI/CD (GitHub Actions)
+
+Automated Continuous Integration and Continuous Deployment is configured via GitHub Actions (`.github/workflows/deploy.yml`):
+- **Trigger**: Every `git push origin main` or manual trigger via `workflow_dispatch`.
+- **Pipeline**:
+  1. Checks out repository code.
+  2. Sets up Node.js 20 with dependency caching.
+  3. Installs dependencies via `npm ci`.
+  4. Validates code integrity with `npm run typecheck` (`tsc --noEmit`).
+  5. Deploys the worker to Cloudflare Workers via `cloudflare/wrangler-action@v3`.
+
+### GitHub Secrets Configuration
+Configure the following secrets in your GitHub repository (**Settings** > **Secrets and variables** > **Actions**):
+- `CLOUDFLARE_API_TOKEN`: Cloudflare API token with **Edit Cloudflare Workers** permissions (obtain from [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-tokens)).
+- `CLOUDFLARE_ACCOUNT_ID`: Already configured in GitHub Secrets (`20471593c92f49abfca21413f2e452be`).
+
+---
+
 ## Project Structure
 
 ```
