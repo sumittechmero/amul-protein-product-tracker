@@ -180,33 +180,59 @@ export function getAdminHtml(): string {
         </div>
       </div>
 
-      <!-- ALL AMUL PRODUCTS EXPLORER (Quick Track in 1-Click) -->
-      <div class="glass p-5 rounded-2xl border border-slate-800">
-        <div class="flex items-center justify-between mb-3">
+      <!-- COMPLETE AMUL PROTEIN INVENTORY (QUICK TRACK / UNTRACK) -->
+      <div class="glass p-5 sm:p-6 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
           <div>
-            <h3 class="font-bold text-white text-base">Amul Store Catalog Explorer</h3>
-            <p class="text-xs text-slate-400">View all items currently available in the category and click "Track" to monitor them.</p>
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-white text-base sm:text-lg">Amul Protein Store Inventory</h3>
+              <span id="catalogBadgeTotal" class="text-[11px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">Loading items...</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Click any product to add or remove it from real-time restock alerts. Products with photos and prices.</p>
           </div>
-          <button onclick="toggleCatalogExplorer()" id="btnToggleCatalog" class="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-medium">
-            <span>Show Catalog</span> <i class="fa-solid fa-chevron-down"></i>
-          </button>
+          <div class="flex items-center gap-2">
+            <button onclick="loadDashboardData()" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3 py-1.5 rounded-lg text-slate-300 flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-arrows-rotate"></i> Refresh Catalog
+            </button>
+          </div>
         </div>
-        <div id="catalogExplorerContent" class="hidden mt-4 border-t border-slate-800 pt-4">
-          <div class="overflow-x-auto max-h-96">
-            <table class="w-full text-left text-xs text-slate-300">
-              <thead class="text-slate-400 bg-slate-900/80 sticky top-0 uppercase text-[10px] tracking-wider">
-                <tr>
-                  <th class="p-2.5 w-16 text-center">Image</th>
-                  <th class="p-2.5">Product Name</th>
-                  <th class="p-2.5">Price</th>
-                  <th class="p-2.5">Stock Status</th>
-                  <th class="p-2.5 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody id="catalogTableBody" class="divide-y divide-slate-800/60 font-mono">
-                <tr><td colspan="5" class="p-4 text-center text-slate-500 font-sans">Click "Scan Now" to load catalog items</td></tr>
-              </tbody>
-            </table>
+
+        <!-- SEARCH AND FILTER CONTROLS -->
+        <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          <!-- Live Search Bar -->
+          <div class="relative flex-1 max-w-md">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+            <input type="text" id="catalogSearchInput" oninput="handleCatalogSearch(event)" placeholder="Search protein items... (e.g. Whey, Lassi, Paneer, Shake, Milk)" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+            <button id="btnCatalogClearSearch" onclick="clearCatalogSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <!-- Filter Pills -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 text-xs shrink-0">
+            <button type="button" data-filter="all" onclick="setCatalogFilter(this)" id="catFilter-all" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium transition bg-slate-800 text-white border border-slate-700">
+              All (<span id="catCountAll" class="catCountAll">0</span>)
+            </button>
+            <button type="button" data-filter="tracked" onclick="setCatalogFilter(this)" id="catFilter-tracked" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white border border-transparent">
+              Tracked (<span id="catCountTracked" class="catCountTracked">0</span>)
+            </button>
+            <button type="button" data-filter="untracked" onclick="setCatalogFilter(this)" id="catFilter-untracked" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white border border-transparent">
+              Untracked (<span id="catCountUntracked" class="catCountUntracked">0</span>)
+            </button>
+            <button type="button" data-filter="in_stock" onclick="setCatalogFilter(this)" id="catFilter-in_stock" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white border border-transparent">
+              In Stock (<span id="catCountInStock" class="catCountInStock">0</span>)
+            </button>
+            <button type="button" data-filter="oos" onclick="setCatalogFilter(this)" id="catFilter-oos" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white border border-transparent">
+              Out of Stock (<span id="catCountOOS" class="catCountOOS">0</span>)
+            </button>
+          </div>
+        </div>
+
+        <!-- PRODUCT CARDS GRID -->
+        <div id="catalogCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 pt-2">
+          <div class="p-8 col-span-full text-center text-slate-500">
+            <i class="fa-solid fa-spinner fa-spin text-xl text-emerald-400 mb-2"></i>
+            <p class="text-xs">Loading store catalog items...</p>
           </div>
         </div>
       </div>
@@ -216,31 +242,77 @@ export function getAdminHtml(): string {
     <section id="tab-rules" class="hidden space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 class="text-lg font-bold text-white">Tracked Products & Keywords</h2>
-          <p class="text-xs text-slate-400">Products matching these keywords will trigger restock alerts on Telegram.</p>
+          <h2 class="text-lg font-bold text-white">Tracked Products & Inventory</h2>
+          <p class="text-xs text-slate-400">Manage monitored products, add new items from the Amul catalog, or add custom keyword rules.</p>
         </div>
         <button onclick="openAddRuleModal()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition self-start">
           <i class="fa-solid fa-plus"></i> Add Product Keyword
         </button>
       </div>
 
-      <!-- QUICK ADD BY AMUL URL -->
-      <div class="glass p-5 rounded-2xl border border-slate-800 space-y-3">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-link text-emerald-400 text-sm"></i>
-          <h3 class="font-bold text-white text-sm">Add Product by Direct Amul URL or Slug</h3>
+      <!-- COMPLETE AMUL PROTEIN INVENTORY FOR 1-CLICK TRACKING -->
+      <div class="glass p-5 sm:p-6 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-white text-base sm:text-lg">Amul Protein Store Catalog</h3>
+              <span id="rulesCatalogBadgeTotal" class="text-[11px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">Loading items...</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Toggle tracking on any product with 1 click. Monitored items send real-time restock alerts.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="loadDashboardData()" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3 py-1.5 rounded-lg text-slate-300 flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-arrows-rotate"></i> Refresh Catalog
+            </button>
+          </div>
         </div>
-        <div class="flex flex-col sm:flex-row gap-2">
-          <input type="text" id="inputAmulUrl" placeholder="https://shop.amul.com/en/product/amul-high-protein-rose-lassi-200-ml or product slug" onkeydown="if(event.key==='Enter') trackByAmulUrl()" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
-          <button onclick="trackByAmulUrl()" id="btnTrackByUrl" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition shrink-0">
-            <i class="fa-solid fa-plus"></i> Track Product
-          </button>
+
+        <!-- SEARCH AND FILTER CONTROLS -->
+        <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          <div class="relative flex-1 max-w-md">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+            <input type="text" id="rulesCatalogSearchInput" oninput="handleCatalogSearch(event)" placeholder="Search protein items... (e.g. Whey, Lassi, Paneer, Shake)" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+            <button id="btnRulesCatalogClearSearch" onclick="clearCatalogSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 text-xs shrink-0">
+            <button type="button" data-filter="all" onclick="setCatalogFilter(this)" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium transition bg-slate-800 text-white border border-slate-700">
+              All (<span class="catCountAll">0</span>)
+            </button>
+            <button type="button" data-filter="tracked" onclick="setCatalogFilter(this)" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white border border-transparent">
+              Tracked (<span class="catCountTracked">0</span>)
+            </button>
+            <button type="button" data-filter="untracked" onclick="setCatalogFilter(this)" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white border border-transparent">
+              Untracked (<span class="catCountUntracked">0</span>)
+            </button>
+            <button type="button" data-filter="in_stock" onclick="setCatalogFilter(this)" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white border border-transparent">
+              In Stock (<span class="catCountInStock">0</span>)
+            </button>
+            <button type="button" data-filter="oos" onclick="setCatalogFilter(this)" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white border border-transparent">
+              Out of Stock (<span class="catCountOOS">0</span>)
+            </button>
+          </div>
         </div>
-        <p class="text-[11px] text-slate-400">Paste any product URL from <a href="https://shop.amul.com/en/browse/protein" target="_blank" class="text-emerald-400 hover:underline">shop.amul.com</a> to automatically track inventory and send photo restock alerts.</p>
+
+        <!-- PRODUCT CARDS GRID -->
+        <div id="rulesCatalogCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 pt-2">
+          <div class="p-8 col-span-full text-center text-slate-500">
+            <i class="fa-solid fa-spinner fa-spin text-xl text-emerald-400 mb-2"></i>
+            <p class="text-xs">Loading store catalog items...</p>
+          </div>
+        </div>
       </div>
 
-      <!-- RULES LIST -->
-      <div class="glass rounded-2xl border border-slate-800 overflow-hidden">
+      <!-- ACTIVE RULES LIST -->
+      <div class="glass rounded-2xl border border-slate-800 overflow-hidden space-y-2">
+        <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div>
+            <h3 class="font-bold text-white text-sm">Active Tracking Rules & Custom Keywords</h3>
+            <p class="text-xs text-slate-400">Rules matched against incoming scans</p>
+          </div>
+        </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm text-slate-300">
             <thead class="bg-slate-900 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
@@ -257,6 +329,21 @@ export function getAdminHtml(): string {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <!-- QUICK ADD BY AMUL URL -->
+      <div class="glass p-5 rounded-2xl border border-slate-800 space-y-3">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-link text-emerald-400 text-sm"></i>
+          <h3 class="font-bold text-white text-sm">Add Custom Product by Direct Amul URL or Slug</h3>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input type="text" id="inputAmulUrl" placeholder="https://shop.amul.com/en/product/amul-high-protein-rose-lassi-200-ml or product slug" onkeydown="if(event.key==='Enter') trackByAmulUrl()" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
+          <button onclick="trackByAmulUrl()" id="btnTrackByUrl" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition shrink-0">
+            <i class="fa-solid fa-plus"></i> Track Product
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-400">Paste any product URL from <a href="https://shop.amul.com/en/browse/protein" target="_blank" class="text-emerald-400 hover:underline">shop.amul.com</a> to automatically track inventory and send photo restock alerts.</p>
       </div>
 
       <!-- Info Box on Defaults -->
@@ -752,7 +839,14 @@ export function getAdminHtml(): string {
         activeBtn.classList.remove('border-transparent', 'text-slate-400');
       }
 
-      if (tabId === 'rules') renderRulesTable();
+      if (tabId === 'rules') {
+        renderRulesTable();
+        if (cachedCatalog && cachedCatalog.length > 0) {
+          renderCatalogExplorer(cachedCatalog);
+        } else {
+          loadDashboardData();
+        }
+      }
       if (tabId === 'logs') loadLogs();
       if (tabId === 'dashboard' && (!cachedCatalog || cachedCatalog.length === 0)) loadDashboardData();
     }
@@ -1023,77 +1117,220 @@ export function getAdminHtml(): string {
       }
     }
 
-    // Catalog explorer
-    function toggleCatalogExplorer() {
-      const el = document.getElementById('catalogExplorerContent');
-      const btn = document.getElementById('btnToggleCatalog');
-      if (el.classList.contains('hidden')) {
-        el.classList.remove('hidden');
-        btn.innerHTML = '<span>Hide Catalog</span> <i class="fa-solid fa-chevron-up"></i>';
-      } else {
-        el.classList.add('hidden');
-        btn.innerHTML = '<span>Show Catalog</span> <i class="fa-solid fa-chevron-down"></i>';
+    // Catalog State: Filtering & Searching
+    let catalogFilter = 'all'; // 'all' | 'tracked' | 'untracked' | 'in_stock' | 'oos'
+    let catalogSearchQuery = '';
+
+    function getMatchingRule(p) {
+      if (!appConfig || !appConfig.rules || !p) return null;
+      var pid = (p.id || '').trim();
+      var alias = (p.alias || '').trim().toLowerCase();
+      var name = (p.name || '').trim().toLowerCase();
+      return appConfig.rules.find(function(r) {
+        if (!r.enabled) return false;
+        if (r.productId && pid && r.productId === pid) return true;
+        if (r.alias && alias && r.alias.toLowerCase() === alias) return true;
+        var kw = (r.keyword || '').trim().toLowerCase();
+        if (kw && (name.includes(kw) || kw.includes(name) || (alias && alias.includes(kw)))) return true;
+        return false;
+      }) || null;
+    }
+
+    function isProductTracked(p) {
+      return Boolean(getMatchingRule(p));
+    }
+
+    function handleCatalogSearch(e) {
+      catalogSearchQuery = (e && e.target ? e.target.value : '').trim().toLowerCase();
+      var c1 = document.getElementById('btnCatalogClearSearch');
+      if (c1) {
+        if (catalogSearchQuery) c1.classList.remove('hidden');
+        else c1.classList.add('hidden');
       }
+      var c2 = document.getElementById('btnRulesCatalogClearSearch');
+      if (c2) {
+        if (catalogSearchQuery) c2.classList.remove('hidden');
+        else c2.classList.add('hidden');
+      }
+      var i1 = document.getElementById('catalogSearchInput');
+      var i2 = document.getElementById('rulesCatalogSearchInput');
+      if (i1 && e && e.target !== i1) i1.value = catalogSearchQuery;
+      if (i2 && e && e.target !== i2) i2.value = catalogSearchQuery;
+      renderCatalogExplorer(cachedCatalog);
+    }
+
+    function clearCatalogSearch() {
+      catalogSearchQuery = '';
+      var i1 = document.getElementById('catalogSearchInput');
+      var i2 = document.getElementById('rulesCatalogSearchInput');
+      if (i1) i1.value = '';
+      if (i2) i2.value = '';
+      var c1 = document.getElementById('btnCatalogClearSearch');
+      if (c1) c1.classList.add('hidden');
+      var c2 = document.getElementById('btnRulesCatalogClearSearch');
+      if (c2) c2.classList.add('hidden');
+      renderCatalogExplorer(cachedCatalog);
+    }
+
+    function setCatalogFilter(el) {
+      if (!el) return;
+      var f = el.getAttribute('data-filter') || 'all';
+      catalogFilter = f;
+      document.querySelectorAll('.cat-filter-btn').forEach(function(btn) {
+        if (btn.getAttribute('data-filter') === f) {
+          btn.className = 'cat-filter-btn px-2.5 py-1 rounded-lg font-medium transition bg-slate-800 text-white border border-slate-700';
+        } else {
+          btn.className = 'cat-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white border border-transparent';
+        }
+      });
+      renderCatalogExplorer(cachedCatalog);
+    }
+
+    function resetCatalogFilters() {
+      clearCatalogSearch();
+      var btn = document.getElementById('catFilter-all');
+      if (btn) setCatalogFilter(btn);
     }
 
     function renderCatalogExplorer(products) {
-      const tbody = document.getElementById('catalogTableBody');
+      var grid1 = document.getElementById('catalogCardsGrid');
+      var grid2 = document.getElementById('rulesCatalogCardsGrid');
+      if (!grid1 && !grid2) return;
+
       if (!products || products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-sans">No products returned from Amul</td></tr>';
+        var emptyHtml = '<div class="p-8 col-span-full text-center text-slate-500 font-sans"><i class="fa-solid fa-box-open text-2xl text-slate-600 mb-2"></i><p class="text-xs">No products returned from Amul store API.</p><button onclick="loadDashboardData()" class="mt-2 text-xs text-emerald-400 hover:underline">Retry Loading</button></div>';
+        if (grid1) grid1.innerHTML = emptyHtml;
+        if (grid2) grid2.innerHTML = emptyHtml;
         return;
       }
-      tbody.innerHTML = products.map(function(p) {
-        var inStock = p.available && p.inventoryQuantity > 0;
-        var isTracked = appConfig && appConfig.rules && appConfig.rules.some(function(r) {
-          if (!r.enabled) return false;
-          if (r.productId && r.productId === p.id) return true;
-          if (r.alias && p.alias && r.alias.toLowerCase() === p.alias.toLowerCase()) return true;
-          var kw = (r.keyword || '').toLowerCase();
-          var nm = (p.name || '').toLowerCase();
-          return Boolean(kw && nm && (nm.includes(kw) || kw.includes(nm)));
-        });
 
+      var totalCount = products.length;
+      var trackedCount = 0;
+      var inStockCount = 0;
+
+      products.forEach(function(p) {
+        if (isProductTracked(p)) trackedCount++;
+        if (p.available && p.inventoryQuantity > 0) inStockCount++;
+      });
+      var untrackedCount = totalCount - trackedCount;
+      var oosCount = totalCount - inStockCount;
+
+      // Update badges
+      var b1 = document.getElementById('catalogBadgeTotal');
+      if (b1) b1.innerText = totalCount + ' products';
+      var b2 = document.getElementById('rulesCatalogBadgeTotal');
+      if (b2) b2.innerText = totalCount + ' products';
+
+      // Update count spans
+      document.querySelectorAll('.catCountAll').forEach(function(el) { el.innerText = totalCount; });
+      document.querySelectorAll('.catCountTracked').forEach(function(el) { el.innerText = trackedCount; });
+      document.querySelectorAll('.catCountUntracked').forEach(function(el) { el.innerText = untrackedCount; });
+      document.querySelectorAll('.catCountInStock').forEach(function(el) { el.innerText = inStockCount; });
+      document.querySelectorAll('.catCountOOS').forEach(function(el) { el.innerText = oosCount; });
+
+      // Filter products
+      var filtered = products.filter(function(p) {
+        var isTrk = isProductTracked(p);
+        var isStk = p.available && p.inventoryQuantity > 0;
+
+        if (catalogFilter === 'tracked' && !isTrk) return false;
+        if (catalogFilter === 'untracked' && isTrk) return false;
+        if (catalogFilter === 'in_stock' && !isStk) return false;
+        if (catalogFilter === 'oos' && isStk) return false;
+
+        if (catalogSearchQuery) {
+          var q = catalogSearchQuery;
+          var nm = (p.name || '').toLowerCase();
+          var al = (p.alias || '').toLowerCase();
+          if (!nm.includes(q) && !al.includes(q)) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        var noMatchHtml = '<div class="p-8 col-span-full text-center text-slate-500 font-sans"><i class="fa-solid fa-filter-circle-xmark text-2xl text-slate-600 mb-2"></i><p class="text-xs">No products match the selected filter or search query.</p><button onclick="resetCatalogFilters()" class="mt-2 text-xs text-emerald-400 hover:underline">Reset Filters</button></div>';
+        if (grid1) grid1.innerHTML = noMatchHtml;
+        if (grid2) grid2.innerHTML = noMatchHtml;
+        return;
+      }
+
+      var cardsHtml = filtered.map(function(p) {
+        var inStock = p.available && p.inventoryQuantity > 0;
+        var rule = getMatchingRule(p);
+        var isTracked = Boolean(rule);
         var imgSafeUrl = p.imageUrl || '';
         var imgSafeName = (p.name || '').replace(/"/g, '&quot;');
-        var thumbHtml = p.imageUrl
-          ? '<div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700/80 p-1 flex items-center justify-center overflow-hidden cursor-pointer mx-auto shadow-sm" data-img="' + imgSafeUrl + '" data-name="' + imgSafeName + '" onclick="handleImageClick(this)">' +
-              '<img src="' + p.imageUrl + '" alt="" class="w-full h-full object-contain rounded-lg" loading="lazy" onerror="handleImgError(this)" />' +
+
+        var imgHtml = p.imageUrl
+          ? '<div class="relative w-16 h-16 min-w-[64px] rounded-xl bg-slate-900 border border-slate-700/80 p-1 flex items-center justify-center overflow-hidden group cursor-pointer shrink-0 shadow" data-img="' + imgSafeUrl + '" data-name="' + imgSafeName + '" onclick="handleImageClick(this)">' +
+              '<img src="' + p.imageUrl + '" alt="" class="w-full h-full object-contain rounded-lg transition duration-200 group-hover:scale-105" loading="lazy" onerror="handleImgError(this)" />' +
+              '<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white text-xs rounded-lg"><i class="fa-solid fa-magnifying-glass-plus"></i></div>' +
             '</div>'
-          : '<div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 mx-auto"><i class="fa-solid fa-bottle-droplet"></i></div>';
+          : '<div class="w-16 h-16 min-w-[64px] rounded-xl bg-slate-900 border border-slate-800 p-1 flex items-center justify-center text-emerald-400 shrink-0 mx-auto"><i class="fa-solid fa-bottle-droplet text-xl"></i></div>';
 
-        var actionBtn = isTracked
-          ? '<button data-id="' + (p.id || p.alias || '') + '" onclick="untrackProduct(this)" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-rose-950 hover:border-rose-700 text-emerald-400 hover:text-rose-300 border border-slate-700 transition flex items-center gap-1.5 ml-auto">' +
-              '<i class="fa-solid fa-check text-emerald-400"></i> Tracked (Remove)' +
-            '</button>'
-          : '<button data-id="' + (p.id || '') + '" onclick="trackCatalogProduct(this)" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 transition flex items-center gap-1.5 ml-auto">' +
-              '<i class="fa-solid fa-plus"></i> Track' +
-            '</button>';
+        var borderClass = inStock ? 'border-emerald-500/30 shadow-sm' : 'border-slate-800';
+        var stockBadge = inStock
+          ? '<span class="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">● In Stock (' + p.inventoryQuantity + ')</span>'
+          : '<span class="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30">○ Out of Stock</span>';
 
-        return '<tr class="hover:bg-slate-900/40">' +
-          '<td class="p-2.5 text-center">' + thumbHtml + '</td>' +
-          '<td class="p-2.5 font-sans text-white font-medium">' +
-            '<div class="leading-tight">' + p.name + '</div>' +
-            (p.alias ? '<div class="text-[10px] text-slate-500 font-mono mt-0.5">' + p.alias + '</div>' : '') +
-          '</td>' +
-          '<td class="p-2.5 font-mono text-white font-bold">₹' + p.price + '</td>' +
-          '<td class="p-2.5">' +
-            '<span class="px-2 py-0.5 rounded text-[10px] font-sans ' + (inStock ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-rose-950 text-rose-400 border border-rose-800') + '">' +
-              (inStock ? 'In Stock (' + p.inventoryQuantity + ')' : 'Out of Stock') +
-            '</span>' +
-          '</td>' +
-          '<td class="p-2.5 text-right font-sans">' + actionBtn + '</td>' +
-        '</tr>';
+        var targetRemoveId = rule ? rule.id : (p.id || p.alias);
+        var actionSection = isTracked
+          ? '<div class="border-t border-slate-800/80 pt-2.5 flex items-center gap-2">' +
+              '<span class="flex-1 py-1.5 px-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold flex items-center justify-center gap-1.5">' +
+                '<i class="fa-solid fa-circle-check"></i> Tracked' +
+              '</span>' +
+              '<button data-id="' + targetRemoveId + '" onclick="untrackProduct(this)" class="py-1.5 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500 hover:text-white border border-rose-500/25 text-rose-400 text-[11px] font-semibold transition flex items-center gap-1" title="Stop tracking this product">' +
+                '<i class="fa-solid fa-trash-can"></i> Remove' +
+              '</button>' +
+              '<a href="' + (p.url || ('https://shop.amul.com/en/product/' + p.alias)) + '" target="_blank" class="p-1.5 text-slate-500 hover:text-slate-300 transition" title="Open Amul Store">' +
+                '<i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>' +
+              '</a>' +
+            '</div>'
+          : '<div class="border-t border-slate-800/80 pt-2.5 flex items-center gap-2">' +
+              '<button data-id="' + (p.id || p.alias) + '" onclick="trackCatalogProduct(this)" class="flex-1 py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold transition flex items-center justify-center gap-1.5 shadow-sm">' +
+                '<i class="fa-solid fa-plus"></i> Track Product' +
+              '</button>' +
+              '<a href="' + (p.url || ('https://shop.amul.com/en/product/' + p.alias)) + '" target="_blank" class="p-1.5 text-slate-500 hover:text-slate-300 transition" title="Open Amul Store">' +
+                '<i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>' +
+              '</a>' +
+            '</div>';
+
+        return '<div class="glass p-4 rounded-2xl border ' + borderClass + ' flex flex-col justify-between space-y-3 hover:border-slate-700 transition">' +
+          '<div>' +
+            '<div class="flex items-center justify-between gap-2 mb-2.5">' +
+              stockBadge +
+              '<span class="text-xs font-bold text-white font-mono bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-lg">₹' + p.price + '</span>' +
+            '</div>' +
+            '<div class="flex items-start gap-3">' +
+              imgHtml +
+              '<div class="min-w-0 flex-1">' +
+                '<h4 class="font-semibold text-xs text-white line-clamp-2 leading-snug" title="' + imgSafeName + '">' + p.name + '</h4>' +
+                (p.alias ? '<p class="text-[10px] text-slate-400 font-mono truncate mt-1">' + p.alias + '</p>' : '') +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          actionSection +
+        '</div>';
       }).join('');
+
+      if (grid1) grid1.innerHTML = cardsHtml;
+      if (grid2) grid2.innerHTML = cardsHtml;
     }
 
     // Direct Catalog Product Tracking
     async function trackCatalogProduct(target) {
-      var productId = (typeof target === 'object' && target !== null && target.getAttribute)
-        ? target.getAttribute('data-id')
-        : target;
+      var btn = (typeof target === 'object' && target !== null && target.getAttribute) ? target : null;
+      var productId = btn ? btn.getAttribute('data-id') : (typeof target === 'string' ? target : '');
       if (!productId) return;
-      var p = cachedCatalog.find(function(x) { return x.id === productId; });
+      var p = cachedCatalog.find(function(x) { return x.id === productId || x.alias === productId; });
       if (!p) return;
+
+      var origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Adding...';
+      }
+
       try {
         var res = await fetch('/api/products/track', {
           method: 'POST',
@@ -1103,11 +1340,13 @@ export function getAdminHtml(): string {
             name: p.name,
             alias: p.alias,
             imageUrl: p.imageUrl,
-            price: p.price
+            price: p.price,
+            available: p.available,
+            inventoryQuantity: p.inventoryQuantity
           })
         });
         var data = await res.json();
-        if (!data.success) throw new Error(data.error);
+        if (!data.success) throw new Error(data.error || 'Failed to track product');
         appConfig.rules = data.rules;
         populateSettings();
         renderCatalogExplorer(cachedCatalog);
@@ -1116,15 +1355,25 @@ export function getAdminHtml(): string {
         await loadDashboardData();
       } catch (err) {
         showAlert('error', 'Failed to track product: ' + err.message);
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
       }
     }
 
     // Direct Product Untracking
     async function untrackProduct(target) {
-      var targetId = (typeof target === 'object' && target !== null && target.getAttribute)
-        ? target.getAttribute('data-id')
-        : target;
+      var btn = (typeof target === 'object' && target !== null && target.getAttribute) ? target : null;
+      var targetId = btn ? btn.getAttribute('data-id') : (typeof target === 'string' ? target : '');
       if (!targetId) return;
+
+      var origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Removing...';
+      }
+
       try {
         var res = await fetch('/api/products/untrack', {
           method: 'POST',
@@ -1132,7 +1381,7 @@ export function getAdminHtml(): string {
           body: JSON.stringify({ productId: targetId })
         });
         var data = await res.json();
-        if (!data.success) throw new Error(data.error);
+        if (!data.success) throw new Error(data.error || 'Failed to untrack product');
         appConfig.rules = data.rules;
         populateSettings();
         renderCatalogExplorer(cachedCatalog);
@@ -1141,6 +1390,10 @@ export function getAdminHtml(): string {
         await loadDashboardData();
       } catch (err) {
         showAlert('error', 'Failed to untrack product: ' + err.message);
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
       }
     }
 
@@ -1175,7 +1428,9 @@ export function getAdminHtml(): string {
         name: matchInCatalog ? matchInCatalog.name : slug.replace(/-/g, ' ').replace(/\b\w/g, function(l){ return l.toUpperCase(); }),
         productId: matchInCatalog ? matchInCatalog.id : undefined,
         imageUrl: matchInCatalog ? matchInCatalog.imageUrl : undefined,
-        price: matchInCatalog ? matchInCatalog.price : undefined
+        price: matchInCatalog ? matchInCatalog.price : undefined,
+        available: matchInCatalog ? matchInCatalog.available : undefined,
+        inventoryQuantity: matchInCatalog ? matchInCatalog.inventoryQuantity : undefined
       };
 
       var btn = document.getElementById('btnTrackByUrl');

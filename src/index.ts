@@ -5,6 +5,7 @@ import {
   getConfig,
   saveConfig,
   getStockState,
+  saveStockState,
   getScanLogs,
   runScan,
   matchesRule,
@@ -404,6 +405,28 @@ export default {
         }
 
         await saveConfig(env.AMUL_TRACKER_KV, config);
+
+        // Seed initial state in KV so the product is immediately visible with availability
+        if (productId) {
+          try {
+            const state = await getStockState(env.AMUL_TRACKER_KV);
+            state[productId] = {
+              id: productId,
+              name: name || alias,
+              alias: alias || '',
+              available: body.available !== undefined ? Boolean(body.available) : false,
+              inventoryQuantity: Number(body.inventoryQuantity) || 0,
+              price: price || 0,
+              imageUrl: imageUrl || undefined,
+              lastChecked: Date.now(),
+              lastStatusChangeAt: Date.now()
+            };
+            await saveStockState(env.AMUL_TRACKER_KV, state);
+          } catch (e) {
+            console.error('Failed to seed stock state:', e);
+          }
+        }
+
         return jsonResponse({ success: true, rules: config.rules });
       }
 
@@ -424,6 +447,30 @@ export default {
           return true;
         });
         await saveConfig(env.AMUL_TRACKER_KV, config);
+
+        // Also clean up stockState in KV
+        try {
+          const state = await getStockState(env.AMUL_TRACKER_KV);
+          let changed = false;
+          for (const key of Object.keys(state)) {
+            const item = state[key];
+            if (
+              key === targetId ||
+              key.toLowerCase() === targetLower ||
+              (item.alias && item.alias.toLowerCase() === targetLower) ||
+              (item.id && item.id.toLowerCase() === targetLower)
+            ) {
+              delete state[key];
+              changed = true;
+            }
+          }
+          if (changed) {
+            await saveStockState(env.AMUL_TRACKER_KV, state);
+          }
+        } catch (e) {
+          console.error('Failed to clear stock state on untrack:', e);
+        }
+
         return jsonResponse({ success: true, rules: config.rules });
       }
 
