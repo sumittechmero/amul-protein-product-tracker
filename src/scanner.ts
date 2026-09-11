@@ -1,4 +1,14 @@
-import { AppConfig, ProductInfo, ScanLog, StockState, TrackedRule } from './types';
+import {
+  AppConfig,
+  ProductInfo,
+  PublicProductStatus,
+  PublicStatusResponse,
+  ScanLog,
+  StockHistory,
+  StockHistoryInterval,
+  StockState,
+  TrackedRule
+} from './types';
 import { fetchAmulProducts } from './amul';
 import { sendOutOfStockAlert, sendRestockAlert } from './telegram';
 import { sendNtfyOutOfStockAlert, sendNtfyRestockAlert } from './ntfy';
@@ -7,6 +17,7 @@ import { sendAppriseOutOfStockAlert, sendAppriseRestockAlert } from './apprise';
 const CONFIG_KEY = 'app_config';
 const STOCK_STATE_KEY = 'stock_state';
 const SCAN_LOGS_KEY = 'scan_logs';
+const STOCK_HISTORY_KEY = 'stock_history';
 const MAX_LOGS = 50;
 
 /**
@@ -161,6 +172,104 @@ export async function appendScanLog(kv: KVNamespace | undefined, log: ScanLog): 
   await kvPut(kv, SCAN_LOGS_KEY, logs);
 }
 
+export async function getStockHistory(kv: KVNamespace | undefined): Promise<StockHistory> {
+  const existing = await kvGet<StockHistory>(kv, STOCK_HISTORY_KEY);
+  return existing || {};
+}
+
+export async function saveStockHistory(kv: KVNamespace | undefined, history: StockHistory): Promise<void> {
+  await kvPut(kv, STOCK_HISTORY_KEY, history);
+}
+
+/**
+ * Calculates availability uptime percentage (0-100%) for a given product history within a time window.
+ */
+export function calculateUptimePercentage(
+  intervals: StockHistoryInterval[],
+  windowMs: number,
+  now = Date.now()
+): number {
+  if (!intervals || intervals.length === 0) return 0;
+  const windowStart = now - windowMs;
+  let inStockMs = 0;
+  let totalTrackedMs = 0;
+
+  for (const interval of intervals) {
+    const start = Math.max(interval.from, windowStart);
+    const end = Math.min(interval.to || now, now);
+
+    if (end > start) {
+      const duration = end - start;
+      totalTrackedMs += duration;
+      if (interval.available) {
+        inStockMs += duration;
+      }
+    }
+  }
+
+  if (totalTrackedMs === 0) {
+    const current = intervals[intervals.length - 1];
+    return current?.available ? 100 : 0;
+  }
+
+  return Math.min(100, Math.max(0, Math.round((inStockMs / totalTrackedMs) * 1000) / 10));
+}
+
+/**
+ * Compiles public status data for consumer display (no auth required).
+ */
+export async function getPublicStatusData(kv: KVNamespace | undefined): Promise<PublicStatusResponse> {
+  const config = await getConfig(kv);
+  const state = await getStockState(kv);
+  const history = await getStockHistory(kv);
+  const logs = await getScanLogs(kv);
+  const now = Date.now();
+
+  const publicProducts: PublicProductStatus[] = [];
+  const trackedRules = config.rules.filter(r => r.enabled);
+
+  for (const rule of trackedRules) {
+    const matchedStateItem = Object.values(state).find(item =>
+      item.name.toLowerCase().includes(rule.keyword.toLowerCase()) ||
+      rule.keyword.toLowerCase().includes(item.name.toLowerCase()) ||
+      item.alias.toLowerCase().includes(rule.keyword.toLowerCase())
+    );
+
+    const productHistory = matchedStateItem ? (history[matchedStateItem.id] || []) : [];
+    const inStock = matchedStateItem ? (matchedStateItem.available && matchedStateItem.inventoryQuantity > 0) : false;
+    const quantity = matchedStateItem ? matchedStateItem.inventoryQuantity : 0;
+    const price = matchedStateItem ? matchedStateItem.price : 0;
+    const url = matchedStateItem?.alias
+      ? `https://shop.amul.com/en/product/${matchedStateItem.alias}`
+      : `https://shop.amul.com/en/browse/${config.amul.category || 'protein'}`;
+
+    publicProducts.push({
+      id: matchedStateItem?.id || rule.id,
+      name: matchedStateItem?.name || rule.name,
+      alias: matchedStateItem?.alias || '',
+      price,
+      available: inStock,
+      inventoryQuantity: quantity,
+      url,
+      matchedRuleName: rule.name,
+      lastChecked: matchedStateItem?.lastChecked || now,
+      lastStatusChangeAt: matchedStateItem?.lastStatusChangeAt || now,
+      history: productHistory,
+      uptimePercentage24h: calculateUptimePercentage(productHistory, 24 * 3600 * 1000, now),
+      uptimePercentage7d: calculateUptimePercentage(productHistory, 7 * 24 * 3600 * 1000, now)
+    });
+  }
+
+  return {
+    success: true,
+    lastScanTimestamp: logs[0]?.timestamp || null,
+    isScanningActive: config.isScanningActive,
+    totalTracked: publicProducts.length,
+    totalInStock: publicProducts.filter(p => p.available).length,
+    products: publicProducts
+  };
+}
+
 /**
  * Checks if a product matches a given rule.
  * Handles fuzzy multi-word patterns (e.g. "protein buttermilk" matches "Amul High Protein Buttermilk, 200 mL").
@@ -252,7 +361,7 @@ export async function runScan(
   // Continuously ping Render services to prevent free-tier spindown
   keepAliveRenderServices(config).catch(() => {});
 
-  // If disabled and triggered by cron, skip
+  // If disabled and triggered by cron, skip (do not write to KV)
   if (!config.isScanningActive && trigger === 'cron') {
     const skipLog: ScanLog = {
       id: `log-${now}`,
@@ -266,7 +375,6 @@ export async function runScan(
       status: 'warning',
       message: 'Scanning paused in configuration.'
     };
-    await appendScanLog(kv, skipLog);
     return {
       success: true,
       totalFound: 0,
@@ -294,7 +402,9 @@ export async function runScan(
       status: 'error',
       message: err.message || 'Failed to fetch Amul products.'
     };
-    await appendScanLog(kv, errorLog);
+    if (trigger === 'manual') {
+      await appendScanLog(kv, errorLog);
+    }
     return {
       success: false,
       totalFound: 0,
@@ -308,6 +418,10 @@ export async function runScan(
   }
 
   const previousState = await getStockState(kv);
+  const stockHistory = await getStockHistory(kv);
+  let hasAnyStateChanged = false;
+  let historyChanged = false;
+
   const matchedProducts: ProductInfo[] = [];
   const alertsSent: string[] = [];
 
@@ -439,6 +553,41 @@ export async function runScan(
         }
       }
 
+      // Check if state transitioned or alert dispatched
+      const isStatusTransition = !prev || wasPreviouslyInStock !== isCurrentlyInStock;
+      if (isStatusTransition || alertSentForThisProduct) {
+        hasAnyStateChanged = true;
+      }
+
+      // Track interval history for availability graphs
+      if (!stockHistory[product.id]) {
+        stockHistory[product.id] = [{
+          from: now,
+          available: isCurrentlyInStock,
+          quantity: product.inventoryQuantity
+        }];
+        historyChanged = true;
+      } else {
+        const intervals = stockHistory[product.id];
+        const lastInterval = intervals[intervals.length - 1];
+        if (lastInterval && lastInterval.available !== isCurrentlyInStock) {
+          lastInterval.to = now;
+          intervals.push({
+            from: now,
+            available: isCurrentlyInStock,
+            quantity: product.inventoryQuantity
+          });
+          // Prune intervals older than 14 days to keep KV value ultra-compact
+          const cutoff = now - (14 * 24 * 3600 * 1000);
+          stockHistory[product.id] = intervals.filter(iv => (iv.to || now) > cutoff);
+          historyChanged = true;
+        } else if (lastInterval && lastInterval.quantity !== product.inventoryQuantity && isCurrentlyInStock) {
+          // Update current quantity in active interval without creating new interval
+          lastInterval.quantity = product.inventoryQuantity;
+          historyChanged = true;
+        }
+      }
+
       // Update state record for this product
       previousState[product.id] = {
         id: product.id,
@@ -454,8 +603,15 @@ export async function runScan(
     }
   }
 
-  // Persist updated stock state
-  await saveStockState(kv, previousState);
+  // CRITICAL KV OPTIMIZATION:
+  // Only persist to KV if a status change occurred or an alert was sent!
+  // This reduces daily KV writes from 1,440+ down to < 20 writes/day, well below the 1,000/day limit.
+  if (hasAnyStateChanged) {
+    await saveStockState(kv, previousState);
+  }
+  if (historyChanged) {
+    await saveStockHistory(kv, stockHistory);
+  }
 
   const inStockCount = matchedProducts.filter(p => p.available && p.inventoryQuantity > 0).length;
 
@@ -478,7 +634,10 @@ export async function runScan(
     message: `Scanned ${amulResult.totalFound} products. ${matchedProducts.length} tracked items matched (${inStockCount} in stock).`
   };
 
-  await appendScanLog(kv, log);
+  // Only persist log if manual trigger, alert dispatched, or status changed
+  if (trigger === 'manual' || alertsSent.length > 0 || hasAnyStateChanged) {
+    await appendScanLog(kv, log);
+  }
 
   return {
     success: true,

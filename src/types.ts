@@ -110,3 +110,38 @@ export interface ScanLog {
   status: 'success' | 'warning' | 'error';
   message?: string;
 }
+
+export interface StockHistoryInterval {
+  from: number; // Unix timestamp ms
+  to?: number; // Unix timestamp ms (undefined if currently ongoing)
+  available: boolean;
+  quantity: number;
+}
+
+export type StockHistory = Record<string, StockHistoryInterval[]>;
+
+export interface PublicProductStatus {
+  id: string;
+  name: string;
+  alias: string;
+  price: number;
+  available: boolean;
+  inventoryQuantity: number;
+  imageUrl?: string;
+  url: string;
+  matchedRuleName?: string;
+  lastChecked: number;
+  lastStatusChangeAt?: number;
+  history: StockHistoryInterval[];
+  uptimePercentage24h: number;
+  uptimePercentage7d: number;
+}
+
+export interface PublicStatusResponse {
+  success: boolean;
+  lastScanTimestamp: number | null;
+  isScanningActive: boolean;
+  totalTracked: number;
+  totalInStock: number;
+  products: PublicProductStatus[];
+}

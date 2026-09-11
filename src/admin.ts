@@ -57,6 +57,12 @@ export function getAdminHtml(): string {
 
     <!-- Quick Action Controls -->
     <div class="flex items-center gap-3">
+      <!-- Public Status Page Link -->
+      <a href="/" target="_blank" title="View Public Status Page" class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white font-medium text-xs sm:text-sm px-3 py-2 rounded-lg transition">
+        <i class="fa-solid fa-arrow-up-right-from-square text-xs text-emerald-400"></i>
+        <span class="hidden sm:inline">Public Page</span>
+      </a>
+
       <!-- Live Cron Scanner Status Indicator -->
       <div id="scannerStatusBadge" class="hidden sm:flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-medium">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>

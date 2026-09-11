@@ -1,12 +1,14 @@
 import { Env, TrackedRule } from './types';
 import { getAdminHtml } from './admin';
+import { getPublicHtml } from './public';
 import {
   getConfig,
   saveConfig,
   getStockState,
   getScanLogs,
   runScan,
-  matchesRule
+  matchesRule,
+  getPublicStatusData
 } from './scanner';
 import { sendTestNotification } from './telegram';
 import { sendNtfyTest } from './ntfy';
@@ -57,14 +59,30 @@ export default {
       });
     }
 
+    // Serve Public Status Page (unauthenticated)
+    if (path === '/' || path === '/index.html') {
+      return new Response(getPublicHtml(), {
+        headers: {
+          'content-type': 'text/html; charset=utf-8',
+          'cache-control': 'no-cache'
+        }
+      });
+    }
+
     // Serve Admin UI
-    if (path === '/' || path === '/admin' || path === '/index.html') {
+    if (path === '/admin') {
       return new Response(getAdminHtml(), {
         headers: {
           'content-type': 'text/html; charset=utf-8',
           'cache-control': 'no-cache'
         }
       });
+    }
+
+    // Public Status API (unauthenticated, live availability & history for public UI)
+    if (path === '/api/public/status' && method === 'GET') {
+      const statusData = await getPublicStatusData(env.AMUL_TRACKER_KV);
+      return jsonResponse(statusData);
     }
 
     // Health check endpoint (public)
