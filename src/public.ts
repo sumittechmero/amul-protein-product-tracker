@@ -182,6 +182,19 @@ export function getPublicHtml(): string {
     <!-- TIMELINE TOOLTIP POPUP -->
     <div id="timelineTooltip" class="fixed hidden z-50 pointer-events-none bg-slate-900/95 border border-slate-700 px-3 py-2 rounded-xl text-xs shadow-2xl text-slate-200 backdrop-blur-md"></div>
 
+    <!-- PRODUCT IMAGE LIGHTBOX MODAL -->
+    <div id="lightboxModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onclick="closeLightbox()">
+      <div class="relative max-w-lg w-full glass p-4 rounded-3xl border border-slate-700 text-center space-y-3" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between px-2">
+          <h4 id="lightboxTitle" class="text-sm font-bold text-white truncate max-w-[85%] text-left"></h4>
+          <button onclick="closeLightbox()" class="text-slate-400 hover:text-white text-base"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="bg-slate-900/90 rounded-2xl p-4 flex items-center justify-center max-h-[70vh] border border-slate-800">
+          <img id="lightboxImg" src="" alt="Product" class="max-h-[60vh] max-w-full object-contain rounded-xl" />
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- FOOTER -->
@@ -282,16 +295,30 @@ export function getPublicHtml(): string {
         var btn30dClass = activeTimelineMode === '30d' ? 'bg-emerald-500 text-white font-bold shadow' : 'text-slate-400 hover:text-white';
         var btn24hClass = activeTimelineMode === '24h' ? 'bg-emerald-500 text-white font-bold shadow' : 'text-slate-400 hover:text-white';
 
-        html += '<div class="glass p-6 sm:p-7 rounded-3xl border ' + borderClass + ' transition hover:border-slate-700 space-y-5">' +
-          '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
-            '<div>' +
-              '<div class="flex items-center gap-2 mb-1.5">' +
-                stockBadge +
-                '<span class="text-xs text-slate-400 font-medium">' + (p.matchedRuleName || 'Protein') + '</span>' +
+        var imgHtml = p.imageUrl
+          ? '<div class="relative w-16 h-16 min-w-[64px] rounded-2xl bg-slate-900/90 border border-slate-700/80 p-1 flex items-center justify-center overflow-hidden group cursor-pointer shadow-md shrink-0" onclick="openLightbox(\'' + (p.imageUrl || '').replace(/'/g, "\\'") + '\', \'' + (p.name || '').replace(/'/g, "\\'") + '\')">' +
+              '<img src="' + p.imageUrl + '" alt="' + (p.name || '').replace(/"/g, '&quot;') + '" class="w-full h-full object-contain rounded-xl transition duration-200 group-hover:scale-105" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML=\'<i class=\\\'fa-solid fa-bottle-droplet text-emerald-400 text-2xl\\\'></i>\';" />' +
+              '<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white text-xs rounded-xl">' +
+                '<i class="fa-solid fa-magnifying-glass-plus"></i>' +
               '</div>' +
-              '<h4 class="font-bold text-base sm:text-lg text-white leading-snug">' + p.name + '</h4>' +
+            '</div>'
+          : '<div class="w-16 h-16 min-w-[64px] rounded-2xl bg-slate-900 border border-slate-800 p-1 flex items-center justify-center text-emerald-400 shadow-md shrink-0">' +
+              '<i class="fa-solid fa-bottle-droplet text-2xl"></i>' +
+            '</div>';
+
+        html += '<div class="glass p-6 sm:p-7 rounded-3xl border ' + borderClass + ' transition hover:border-slate-700 space-y-5">' +
+          '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">' +
+            '<div class="flex items-center gap-4 min-w-0">' +
+              imgHtml +
+              '<div class="min-w-0">' +
+                '<div class="flex items-center gap-2 mb-1.5 flex-wrap">' +
+                  stockBadge +
+                  '<span class="text-xs text-slate-400 font-medium">' + (p.matchedRuleName || 'Protein') + '</span>' +
+                '</div>' +
+                '<h4 class="font-bold text-base sm:text-lg text-white leading-snug truncate sm:whitespace-normal">' + p.name + '</h4>' +
+              '</div>' +
             '</div>' +
-            '<div class="flex items-center gap-3 self-start sm:self-auto">' +
+            '<div class="flex items-center gap-3 self-start sm:self-auto shrink-0">' +
               '<div class="text-right">' +
                 '<span class="text-xs text-slate-400 block text-[11px]">Price</span>' +
                 '<span class="text-lg font-bold text-white font-mono">₹' + p.price + '</span>' +
@@ -451,6 +478,23 @@ export function getPublicHtml(): string {
     function hideTooltip() {
       var tooltip = document.getElementById('timelineTooltip');
       if (tooltip) tooltip.classList.add('hidden');
+    }
+
+    function openLightbox(url, title) {
+      if (!url) return;
+      var modal = document.getElementById('lightboxModal');
+      var img = document.getElementById('lightboxImg');
+      var caption = document.getElementById('lightboxTitle');
+      if (modal && img) {
+        img.src = url;
+        if (caption) caption.innerText = title || 'Product Image';
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeLightbox() {
+      var modal = document.getElementById('lightboxModal');
+      if (modal) modal.classList.add('hidden');
     }
 
     document.addEventListener('DOMContentLoaded', function() {

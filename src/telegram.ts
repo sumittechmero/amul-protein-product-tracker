@@ -73,7 +73,68 @@ export async function sendTelegramMessage(
 }
 
 /**
- * Sends a rich formatted restock alert when an item becomes available.
+ * Sends a photo with HTML caption to a Telegram chat/channel using the Bot API.
+ */
+export async function sendTelegramPhoto(
+  token: string,
+  chatId: string,
+  photoUrl: string,
+  caption: string,
+  options: { parseMode?: 'HTML' | 'MarkdownV2' } = {}
+): Promise<TelegramResult> {
+  const cleanToken = token.trim();
+  const cleanChatId = chatId.trim();
+  const cleanPhotoUrl = (photoUrl || '').trim();
+
+  if (!cleanToken || !cleanChatId || !cleanPhotoUrl) {
+    return {
+      success: false,
+      error: 'Telegram Bot Token, Chat ID, or Photo URL is missing.'
+    };
+  }
+
+  const endpoint = `https://api.telegram.org/bot${cleanToken}/sendPhoto`;
+  const body: Record<string, any> = {
+    chat_id: cleanChatId,
+    photo: cleanPhotoUrl,
+    caption: caption,
+    parse_mode: options.parseMode || 'HTML'
+  };
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const json = await res.json() as {
+      ok: boolean;
+      description?: string;
+      result?: { message_id?: number };
+    };
+
+    if (!json.ok) {
+      return {
+        success: false,
+        error: json.description || `Telegram API responded with HTTP ${res.status}`
+      };
+    }
+
+    return {
+      success: true,
+      messageId: json.result?.message_id
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: `Network error connecting to Telegram photo API: ${err.message}`
+    };
+  }
+}
+
+/**
+ * Sends a rich formatted restock alert with product image when an item becomes available.
  */
 export async function sendRestockAlert(
   token: string,
@@ -109,6 +170,14 @@ export async function sendRestockAlert(
     `⏰ <i>Checked at ${istTime} IST</i>`
   ].join('\n');
 
+  if (product.imageUrl) {
+    const photoRes = await sendTelegramPhoto(token, chatId, product.imageUrl, message);
+    if (photoRes.success) {
+      return photoRes;
+    }
+    console.warn('sendTelegramPhoto failed, falling back to message:', photoRes.error);
+  }
+
   return sendTelegramMessage(token, chatId, message, { parseMode: 'HTML', disablePreview: false });
 }
 
@@ -135,7 +204,68 @@ export async function sendOutOfStockAlert(
     `⏰ <i>Updated at ${istTime} IST</i>`
   ].join('\n');
 
+  if (product.imageUrl) {
+    const photoRes = await sendTelegramPhoto(token, chatId, product.imageUrl, message);
+    if (photoRes.success) return photoRes;
+  }
+
   return sendTelegramMessage(token, chatId, message, { parseMode: 'HTML', disablePreview: true });
+}
+
+/**
+ * Sends the daily stock summary report at 9:00 AM IST.
+ */
+export async function sendTelegramDailySummary(
+  token: string,
+  chatId: string,
+  inStockProducts: ProductInfo[],
+  oosProducts: ProductInfo[]
+): Promise<TelegramResult> {
+  const istDate = new Date().toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+
+  const lines = [
+    `📊 <b>AMUL PROTEIN — DAILY STOCK DIGEST</b>`,
+    `📅 <i>${istDate} • 9:00 AM IST Digest</i>`,
+    ``
+  ];
+
+  if (inStockProducts.length > 0) {
+    lines.push(`🟢 <b>AVAILABLE IN STOCK (${inStockProducts.length})</b>:`);
+    for (const p of inStockProducts) {
+      lines.push(`• <a href="${escapeHtml(p.url)}"><b>${escapeHtml(p.name)}</b></a>`);
+      lines.push(`   └ 📦 <b>${p.inventoryQuantity}</b> units • ₹${p.price}`);
+    }
+  } else {
+    lines.push(`⚪ <i>No tracked items currently in stock.</i>`);
+  }
+
+  lines.push(``);
+
+  if (oosProducts.length > 0) {
+    lines.push(`🔴 <b>CONTINUOUSLY OUT OF STOCK (${oosProducts.length})</b>:`);
+    for (const p of oosProducts) {
+      lines.push(`• <a href="${escapeHtml(p.url)}">${escapeHtml(p.name)}</a> (₹${p.price})`);
+    }
+  }
+
+  lines.push(``);
+  lines.push(`🛒 <i>Tap any product to order directly from official Amul store.</i>`);
+
+  const message = lines.join('\n');
+  const heroImage = inStockProducts.find(p => p.imageUrl)?.imageUrl || oosProducts.find(p => p.imageUrl)?.imageUrl;
+
+  if (heroImage) {
+    const photoRes = await sendTelegramPhoto(token, chatId, heroImage, message);
+    if (photoRes.success) return photoRes;
+  }
+
+  return sendTelegramMessage(token, chatId, message, { parseMode: 'HTML', disablePreview: false });
 }
 
 /**

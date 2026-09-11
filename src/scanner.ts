@@ -10,9 +10,9 @@ import {
   TrackedRule
 } from './types';
 import { fetchAmulProducts } from './amul';
-import { sendOutOfStockAlert, sendRestockAlert } from './telegram';
-import { sendNtfyOutOfStockAlert, sendNtfyRestockAlert } from './ntfy';
-import { sendAppriseOutOfStockAlert, sendAppriseRestockAlert } from './apprise';
+import { sendOutOfStockAlert, sendRestockAlert, sendTelegramDailySummary } from './telegram';
+import { sendNtfyOutOfStockAlert, sendNtfyRestockAlert, sendNtfyDailySummary } from './ntfy';
+import { sendAppriseOutOfStockAlert, sendAppriseRestockAlert, sendAppriseDailySummary } from './apprise';
 
 const CONFIG_KEY = 'app_config';
 const STOCK_STATE_KEY = 'stock_state';
@@ -55,6 +55,11 @@ export function getDefaultConfig(): AppConfig {
       // Seeded with user-provided jsessionid for instant working connectivity
       cookies: 'jsessionid=s%3APxVRf3vIVbfydh1%2FCNwjmqrU.vA3qqTzYU3Cg0It6DIUCrJOLIwk0%2FYoXkojO5iK35LU',
       limit: 35
+    },
+    summary: {
+      enabled: true,
+      timeIst: '09:00',
+      lastSentDate: ''
     },
     adminPassword: '1sumit100',
     isScanningActive: true,
@@ -137,6 +142,10 @@ export async function getConfig(kv: KVNamespace | undefined): Promise<AppConfig>
   }
   if (!existing.rules || existing.rules.length === 0) {
     existing.rules = defaults.rules;
+    needsSave = true;
+  }
+  if (!existing.summary) {
+    existing.summary = defaults.summary;
     needsSave = true;
   }
   if (needsSave) {
@@ -229,36 +238,70 @@ export async function getPublicStatusData(kv: KVNamespace | undefined): Promise<
   const trackedRules = config.rules.filter(r => r.enabled);
 
   for (const rule of trackedRules) {
-    const matchedStateItem = Object.values(state).find(item =>
-      item.name.toLowerCase().includes(rule.keyword.toLowerCase()) ||
-      rule.keyword.toLowerCase().includes(item.name.toLowerCase()) ||
-      item.alias.toLowerCase().includes(rule.keyword.toLowerCase())
+    const matchedStateItems = Object.values(state).filter(item =>
+      matchesRule({
+        id: item.id,
+        name: item.name,
+        alias: item.alias,
+        price: item.price,
+        available: item.available,
+        inventoryQuantity: item.inventoryQuantity,
+        imageUrl: item.imageUrl,
+        url: item.alias ? `https://shop.amul.com/en/product/${item.alias}` : ''
+      }, rule)
     );
 
-    const productHistory = matchedStateItem ? (history[matchedStateItem.id] || []) : [];
-    const inStock = matchedStateItem ? (matchedStateItem.available && matchedStateItem.inventoryQuantity > 0) : false;
-    const quantity = matchedStateItem ? matchedStateItem.inventoryQuantity : 0;
-    const price = matchedStateItem ? matchedStateItem.price : 0;
-    const url = matchedStateItem?.alias
-      ? `https://shop.amul.com/en/product/${matchedStateItem.alias}`
-      : `https://shop.amul.com/en/browse/${config.amul.category || 'protein'}`;
+    if (matchedStateItems.length > 0) {
+      for (const matchedStateItem of matchedStateItems) {
+        if (publicProducts.some(p => p.id === matchedStateItem.id)) continue;
 
-    publicProducts.push({
-      id: matchedStateItem?.id || rule.id,
-      name: matchedStateItem?.name || rule.name,
-      alias: matchedStateItem?.alias || '',
-      price,
-      available: inStock,
-      inventoryQuantity: quantity,
-      url,
-      matchedRuleName: rule.name,
-      lastChecked: matchedStateItem?.lastChecked || now,
-      lastStatusChangeAt: matchedStateItem?.lastStatusChangeAt || now,
-      history: productHistory,
-      uptimePercentage24h: calculateUptimePercentage(productHistory, 24 * 3600 * 1000, now),
-      uptimePercentage7d: calculateUptimePercentage(productHistory, 7 * 24 * 3600 * 1000, now),
-      uptimePercentage30d: calculateUptimePercentage(productHistory, 30 * 24 * 3600 * 1000, now)
-    });
+        const productHistory = history[matchedStateItem.id] || [];
+        const inStock = matchedStateItem.available && matchedStateItem.inventoryQuantity > 0;
+        const quantity = matchedStateItem.inventoryQuantity;
+        const price = matchedStateItem.price || rule.price || 0;
+        const alias = matchedStateItem.alias || rule.alias || '';
+        const url = alias
+          ? `https://shop.amul.com/en/product/${alias}`
+          : `https://shop.amul.com/en/browse/${config.amul.category || 'protein'}`;
+        const imageUrl = matchedStateItem.imageUrl || rule.imageUrl || undefined;
+
+        publicProducts.push({
+          id: matchedStateItem.id,
+          name: matchedStateItem.name,
+          alias,
+          price,
+          available: inStock,
+          inventoryQuantity: quantity,
+          imageUrl,
+          url,
+          matchedRuleName: rule.name,
+          lastChecked: matchedStateItem.lastChecked || now,
+          lastStatusChangeAt: matchedStateItem.lastStatusChangeAt || now,
+          history: productHistory,
+          uptimePercentage24h: calculateUptimePercentage(productHistory, 24 * 3600 * 1000, now),
+          uptimePercentage7d: calculateUptimePercentage(productHistory, 7 * 24 * 3600 * 1000, now),
+          uptimePercentage30d: calculateUptimePercentage(productHistory, 30 * 24 * 3600 * 1000, now)
+        });
+      }
+    } else {
+      publicProducts.push({
+        id: rule.productId || rule.id,
+        name: rule.name,
+        alias: rule.alias || '',
+        price: rule.price || 0,
+        available: false,
+        inventoryQuantity: 0,
+        imageUrl: rule.imageUrl,
+        url: rule.alias ? `https://shop.amul.com/en/product/${rule.alias}` : `https://shop.amul.com/en/browse/${config.amul.category || 'protein'}`,
+        matchedRuleName: rule.name,
+        lastChecked: now,
+        lastStatusChangeAt: now,
+        history: [],
+        uptimePercentage24h: 0,
+        uptimePercentage7d: 0,
+        uptimePercentage30d: 0
+      });
+    }
   }
 
   return {
@@ -273,10 +316,21 @@ export async function getPublicStatusData(kv: KVNamespace | undefined): Promise<
 
 /**
  * Checks if a product matches a given rule.
- * Handles fuzzy multi-word patterns (e.g. "protein buttermilk" matches "Amul High Protein Buttermilk, 200 mL").
+ * Supports direct productId match, alias match, and fuzzy multi-word keyword matching.
  */
 export function matchesRule(product: ProductInfo, rule: TrackedRule): boolean {
-  if (!rule.enabled || !rule.keyword) return false;
+  if (!rule.enabled) return false;
+
+  // Direct product ID match
+  if (rule.productId && (rule.productId === product.id || rule.id === product.id)) {
+    return true;
+  }
+  // Direct alias match
+  if (rule.alias && rule.alias.toLowerCase() === product.alias.toLowerCase()) {
+    return true;
+  }
+
+  if (!rule.keyword) return false;
 
   const targetText = `${product.name} ${product.alias}`.toLowerCase();
   const keyword = rule.keyword.trim().toLowerCase();
@@ -442,15 +496,11 @@ export async function runScan(
       let shouldAlertOOS = false;
 
       if (isCurrentlyInStock) {
-        if (!prev || !wasPreviouslyInStock || !prev.lastAlertSentAt) {
-          // Status transitioned from OOS to In Stock, or no alert has been sent yet
+        // Individual notification is ONLY sent when a product transitions to In Stock
+        // (i.e. was previously out of stock or newly discovered in stock)
+        // If it was already in stock, do NOT send repeated individual alert!
+        if (!prev || !wasPreviouslyInStock) {
           shouldAlertRestock = true;
-        } else {
-          // It was already in stock, check cooldown
-          const cooldownMs = (config.telegram?.cooldownHours || 4) * 3600 * 1000;
-          if (now - prev.lastAlertSentAt > cooldownMs) {
-            shouldAlertRestock = true;
-          }
         }
       } else if (wasPreviouslyInStock && !isCurrentlyInStock) {
         // Status transitioned from In Stock to OOS
@@ -554,9 +604,9 @@ export async function runScan(
         }
       }
 
-      // Check if state transitioned or alert dispatched
-      const isStatusTransition = !prev || wasPreviouslyInStock !== isCurrentlyInStock;
-      if (isStatusTransition || alertSentForThisProduct) {
+      // Check if state transitioned, alert dispatched, or new image metadata added
+      const isStatusTransition = !prev || wasPreviouslyInStock !== isCurrentlyInStock || (!prev?.imageUrl && Boolean(product.imageUrl));
+      if (isStatusTransition || alertSentForThisProduct || trigger === 'manual') {
         hasAnyStateChanged = true;
       }
 
@@ -599,8 +649,22 @@ export async function runScan(
         inventoryQuantity: product.inventoryQuantity,
         lastChecked: now,
         lastAlertSentAt: alertSentForThisProduct ? now : prev?.lastAlertSentAt,
-        lastStatusChangeAt: prev && wasPreviouslyInStock !== isCurrentlyInStock ? now : prev?.lastStatusChangeAt || now
+        lastStatusChangeAt: prev && wasPreviouslyInStock !== isCurrentlyInStock ? now : prev?.lastStatusChangeAt || now,
+        imageUrl: product.imageUrl || prev?.imageUrl,
+        matchedRuleId: product.matchedRuleId
       };
+    }
+  }
+
+  // Check and dispatch 9:00 AM IST Daily Stock Summary if scheduled
+  if (config.isScanningActive) {
+    try {
+      const summaryResult = await checkAndSendDailySummary(kv, config, amulResult.products || [], previousState, now);
+      if (summaryResult.sent && summaryResult.message) {
+        alertsSent.push(summaryResult.message);
+      }
+    } catch (e: any) {
+      console.error('Error during daily summary dispatch:', e.message);
     }
   }
 
@@ -649,4 +713,132 @@ export async function runScan(
     alertsSent,
     log
   };
+}
+
+/**
+ * Checks if the 9:00 AM IST Daily Stock Summary should be dispatched, and sends it across active channels.
+ */
+export async function checkAndSendDailySummary(
+  kv: KVNamespace | undefined,
+  config: AppConfig,
+  currentProducts: ProductInfo[],
+  state: StockState,
+  now = Date.now()
+): Promise<{ sent: boolean; message?: string }> {
+  if (config.summary?.enabled === false) {
+    return { sent: false, message: 'Daily summary is disabled in settings.' };
+  }
+
+  const targetTime = config.summary?.timeIst || '09:00';
+
+  // Format current date and time in IST (Asia/Kolkata)
+  const istDateStr = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date(now)); // e.g. "2026-09-11"
+
+  const istTimeStr = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(new Date(now)); // e.g. "09:00"
+
+  // Only dispatch if current IST time >= targetTime and not already sent today
+  if (istTimeStr < targetTime || config.summary?.lastSentDate === istDateStr) {
+    return { sent: false, message: 'Not scheduled time or already sent today.' };
+  }
+
+  return executeDailySummaryDispatch(kv, config, currentProducts, state, istDateStr);
+}
+
+export async function executeDailySummaryDispatch(
+  kv: KVNamespace | undefined,
+  config: AppConfig,
+  currentProducts: ProductInfo[],
+  state: StockState,
+  todayDateStr: string
+): Promise<{ sent: boolean; message?: string }> {
+  // Collect all tracked products status
+  const trackedRules = config.rules.filter(r => r.enabled);
+  const trackedItemsList: ProductInfo[] = [];
+
+  for (const rule of trackedRules) {
+    const fromAmul = currentProducts.find(p => matchesRule(p, rule));
+    const fromState = Object.values(state).find(s =>
+      (rule.productId && (s.id === rule.productId || s.id === rule.id)) ||
+      (rule.alias && s.alias.toLowerCase() === rule.alias.toLowerCase()) ||
+      (rule.keyword && s.name.toLowerCase().includes(rule.keyword.toLowerCase()))
+    );
+
+    const isAvailable = fromAmul ? (fromAmul.available && fromAmul.inventoryQuantity > 0) : (fromState?.available && fromState.inventoryQuantity > 0);
+    const quantity = fromAmul?.inventoryQuantity ?? fromState?.inventoryQuantity ?? 0;
+    const price = fromAmul?.price ?? fromState?.price ?? rule.price ?? 0;
+    const alias = fromAmul?.alias || fromState?.alias || rule.alias || '';
+    const name = fromAmul?.name || fromState?.name || rule.name;
+    const imageUrl = fromAmul?.imageUrl || fromState?.imageUrl || rule.imageUrl;
+    const url = alias
+      ? `https://shop.amul.com/en/product/${alias}`
+      : `https://shop.amul.com/en/browse/${config.amul.category || 'protein'}`;
+
+    trackedItemsList.push({
+      id: fromAmul?.id || fromState?.id || rule.id,
+      name,
+      alias,
+      price,
+      available: Boolean(isAvailable),
+      inventoryQuantity: quantity,
+      imageUrl,
+      url,
+      matchedRuleName: rule.name
+    });
+  }
+
+  const inStock = trackedItemsList.filter(p => p.available && p.inventoryQuantity > 0);
+  const oos = trackedItemsList.filter(p => !p.available || p.inventoryQuantity === 0);
+
+  const dispatchPromises: Promise<any>[] = [];
+
+  if (config.telegram?.botToken && config.telegram?.chatId) {
+    dispatchPromises.push(sendTelegramDailySummary(config.telegram.botToken, config.telegram.chatId, inStock, oos));
+  }
+
+  if (config.ntfy?.enabled && config.ntfy?.topic) {
+    dispatchPromises.push(sendNtfyDailySummary(config.ntfy.serverUrl, config.ntfy.topic, inStock, oos, config.ntfy.token));
+  }
+
+  if (config.apprise?.enabled && config.apprise?.serverUrl) {
+    dispatchPromises.push(sendAppriseDailySummary(config.apprise.serverUrl, config.apprise.urls, inStock, oos, config.apprise.configKey));
+  }
+
+  await Promise.allSettled(dispatchPromises);
+
+  // Update lastSentDate in config and save to KV
+  if (config.summary) {
+    config.summary.lastSentDate = todayDateStr;
+    await saveConfig(kv, config);
+  }
+
+  const summaryMsg = `Daily stock digest dispatched: ${inStock.length} in stock, ${oos.length} out of stock.`;
+  return { sent: true, message: summaryMsg };
+}
+
+/**
+ * Manually dispatches the daily summary immediately (for dashboard test button or manual trigger).
+ */
+export async function sendManualDailySummary(kv: KVNamespace | undefined): Promise<{ success: boolean; message: string }> {
+  const config = await getConfig(kv);
+  const state = await getStockState(kv);
+  const amulRes = await fetchAmulProducts(config.amul).catch(() => ({ products: [] }));
+  const todayDateStr = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date());
+
+  const res = await executeDailySummaryDispatch(kv, config, amulRes.products || [], state, todayDateStr);
+  return { success: true, message: res.message || 'Daily stock digest dispatched.' };
 }

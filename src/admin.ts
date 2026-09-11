@@ -96,6 +96,9 @@ export function getAdminHtml(): string {
       <button type="button" onclick="switchTab('rules')" id="tabBtn-rules" class="tab-btn px-4 py-2.5 rounded-t-lg border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
         <i class="fa-solid fa-list-check"></i> Tracked Products <span id="badgeRulesCount" class="bg-slate-800 text-[11px] px-1.5 py-0.5 rounded-full text-slate-300">3</span>
       </button>
+      <button type="button" onclick="switchTab('summary')" id="tabBtn-summary" class="tab-btn px-4 py-2.5 rounded-t-lg border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-calendar-day text-amber-400"></i> Daily Summary
+      </button>
       <button type="button" onclick="switchTab('telegram')" id="tabBtn-telegram" class="tab-btn px-4 py-2.5 rounded-t-lg border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
         <i class="fa-brands fa-telegram"></i> Telegram Settings
       </button>
@@ -193,6 +196,7 @@ export function getAdminHtml(): string {
             <table class="w-full text-left text-xs text-slate-300">
               <thead class="text-slate-400 bg-slate-900/80 sticky top-0 uppercase text-[10px] tracking-wider">
                 <tr>
+                  <th class="p-2.5 w-16 text-center">Image</th>
                   <th class="p-2.5">Product Name</th>
                   <th class="p-2.5">Price</th>
                   <th class="p-2.5">Stock Status</th>
@@ -200,7 +204,7 @@ export function getAdminHtml(): string {
                 </tr>
               </thead>
               <tbody id="catalogTableBody" class="divide-y divide-slate-800/60 font-mono">
-                <tr><td colspan="4" class="p-4 text-center text-slate-500 font-sans">Click "Scan Now" to load catalog items</td></tr>
+                <tr><td colspan="5" class="p-4 text-center text-slate-500 font-sans">Click "Scan Now" to load catalog items</td></tr>
               </tbody>
             </table>
           </div>
@@ -220,14 +224,30 @@ export function getAdminHtml(): string {
         </button>
       </div>
 
+      <!-- QUICK ADD BY AMUL URL -->
+      <div class="glass p-5 rounded-2xl border border-slate-800 space-y-3">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-link text-emerald-400 text-sm"></i>
+          <h3 class="font-bold text-white text-sm">Add Product by Direct Amul URL or Slug</h3>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input type="text" id="inputAmulUrl" placeholder="https://shop.amul.com/en/product/amul-high-protein-rose-lassi-200-ml or product slug" onkeydown="if(event.key==='Enter') trackByAmulUrl()" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
+          <button onclick="trackByAmulUrl()" id="btnTrackByUrl" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition shrink-0">
+            <i class="fa-solid fa-plus"></i> Track Product
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-400">Paste any product URL from <a href="https://shop.amul.com/en/browse/protein" target="_blank" class="text-emerald-400 hover:underline">shop.amul.com</a> to automatically track inventory and send photo restock alerts.</p>
+      </div>
+
       <!-- RULES LIST -->
       <div class="glass rounded-2xl border border-slate-800 overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm text-slate-300">
             <thead class="bg-slate-900 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
               <tr>
-                <th class="px-5 py-3">Rule Name</th>
-                <th class="px-5 py-3">Search Keyword</th>
+                <th class="px-4 py-3 w-16 text-center">Image</th>
+                <th class="px-5 py-3">Product / Rule Name</th>
+                <th class="px-5 py-3">Search Keyword / Slug</th>
                 <th class="px-5 py-3 text-center">Status</th>
                 <th class="px-5 py-3 text-right">Actions</th>
               </tr>
@@ -245,9 +265,61 @@ export function getAdminHtml(): string {
         <div>
           <p class="font-semibold mb-1">Pre-configured Monitoring</p>
           <p class="text-emerald-400/90 leading-relaxed">
-            By default, <b>Protein Lassi</b> (matches Plain & Rose Lassi), <b>Protein Buttermilk</b>, and <b>Blueberry Protein Shake</b> are actively tracked. You can add more keywords (e.g. <i>chocolate whey</i> or <i>paneer</i>) or disable any rule above.
+            By default, <b>Protein Lassi</b> (matches Plain & Rose Lassi), <b>Protein Buttermilk</b>, and <b>Blueberry Protein Shake</b> are actively tracked. You can add more products by URL or keyword, or toggle any rule above.
           </p>
         </div>
+      </div>
+    </section>
+
+    <!-- TAB: DAILY STOCK SUMMARY -->
+    <section id="tab-summary" class="hidden space-y-6">
+      <div class="max-w-2xl glass p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-6">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-calendar-day text-amber-400"></i> Daily Stock Summary
+            </h2>
+            <span class="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-semibold uppercase">Daily Digest</span>
+          </div>
+          <p class="text-xs text-slate-400">
+            Sends an exhaustive morning digest of all currently available products (with images, prices, units, and direct buy links) and continuously out-of-stock items. Dispatches once per day at your chosen time.
+          </p>
+        </div>
+
+        <form id="summaryForm" onsubmit="saveSummarySettings(event)" class="space-y-4">
+          <div class="flex items-center justify-between p-4 bg-slate-900/80 rounded-xl border border-slate-800">
+            <div>
+              <p class="text-xs font-semibold text-slate-200">Enable Daily Stock Summary</p>
+              <p class="text-[11px] text-slate-500">Scheduled daily digest sent automatically via cron</p>
+            </div>
+            <input type="checkbox" id="summaryEnabled" class="w-4 h-4 accent-amber-500 rounded cursor-pointer" checked>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Scheduled Time (IST - Indian Standard Time)</label>
+            <input type="time" id="summaryTimeIst" value="09:00" class="w-40 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 font-mono">
+            <p class="text-[11px] text-slate-500 mt-1">Default: <b>09:00 AM IST</b>. Checked on every 10-minute cron run (zero duplicate alerts).</p>
+          </div>
+
+          <div class="p-4 bg-slate-900/60 rounded-xl border border-slate-800/80 space-y-2 text-xs">
+            <p class="font-semibold text-slate-300">Target Notification Channels</p>
+            <div class="flex flex-wrap gap-2 text-[11px]" id="summaryChannelsList">
+              <span id="chanTgBadge" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 border border-slate-700"><i class="fa-brands fa-telegram text-sky-400 mr-1"></i> Telegram</span>
+              <span id="chanNtfyBadge" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 border border-slate-700"><i class="fa-solid fa-bell text-sky-400 mr-1"></i> ntfy Push</span>
+              <span id="chanAppriseBadge" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 border border-slate-700"><i class="fa-solid fa-satellite-dish text-purple-400 mr-1"></i> Apprise</span>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-1">Summary is dispatched to all active channels configured in their respective tabs.</p>
+          </div>
+
+          <div class="border-t border-slate-800 pt-5 flex flex-wrap items-center gap-3">
+            <button type="submit" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition">
+              Save Summary Settings
+            </button>
+            <button type="button" onclick="testDailySummary()" id="btnTestSummary" class="bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-500/30 text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition">
+              <i class="fa-solid fa-paper-plane"></i> Send Test Summary Now
+            </button>
+          </div>
+        </form>
       </div>
     </section>
 
@@ -640,6 +712,19 @@ export function getAdminHtml(): string {
     </div>
   </div>
 
+  <!-- MODAL: IMAGE LIGHTBOX -->
+  <div id="lightboxModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onclick="closeLightbox()">
+    <div class="relative max-w-lg w-full glass p-4 rounded-3xl border border-slate-700 text-center space-y-3" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between px-2">
+        <h4 id="lightboxTitle" class="text-sm font-bold text-white truncate max-w-[85%] text-left"></h4>
+        <button onclick="closeLightbox()" class="text-slate-400 hover:text-white text-base"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="bg-slate-900/90 rounded-2xl p-4 flex items-center justify-center max-h-[70vh] border border-slate-800">
+        <img id="lightboxImg" src="" alt="Product" class="max-h-[60vh] max-w-full object-contain rounded-xl" />
+      </div>
+    </div>
+  </div>
+
   <!-- CLIENT SCRIPTS -->
   <script>
     let appConfig = null;
@@ -769,6 +854,23 @@ export function getAdminHtml(): string {
         document.getElementById('appriseNotifyOOS').checked = appConfig.apprise.notifyOnOutOfStock ?? false;
       }
 
+      // Daily Summary
+      if (appConfig.summary) {
+        document.getElementById('summaryEnabled').checked = appConfig.summary.enabled ?? true;
+        document.getElementById('summaryTimeIst').value = appConfig.summary.timeIst || '09:00';
+      }
+
+      var tgActive = Boolean(appConfig.telegram && appConfig.telegram.botToken && appConfig.telegram.chatId);
+      var ntfyActive = Boolean(appConfig.ntfy && appConfig.ntfy.enabled && appConfig.ntfy.topic);
+      var appriseActive = Boolean(appConfig.apprise && appConfig.apprise.enabled && appConfig.apprise.serverUrl);
+
+      var chanTg = document.getElementById('chanTgBadge');
+      if (chanTg) chanTg.className = 'px-2.5 py-1 rounded-lg border ' + (tgActive ? 'bg-sky-950/60 text-sky-400 border-sky-800' : 'bg-slate-900 text-slate-500 border-slate-800');
+      var chanNtfy = document.getElementById('chanNtfyBadge');
+      if (chanNtfy) chanNtfy.className = 'px-2.5 py-1 rounded-lg border ' + (ntfyActive ? 'bg-sky-950/60 text-sky-400 border-sky-800' : 'bg-slate-900 text-slate-500 border-slate-800');
+      var chanApp = document.getElementById('chanAppriseBadge');
+      if (chanApp) chanApp.className = 'px-2.5 py-1 rounded-lg border ' + (appriseActive ? 'bg-purple-950/60 text-purple-400 border-purple-800' : 'bg-slate-900 text-slate-500 border-slate-800');
+
       // Amul
       document.getElementById('amulSubstoreId').value = appConfig.amul.substoreId || '';
       document.getElementById('amulCategory').value = appConfig.amul.category || 'protein';
@@ -792,33 +894,39 @@ export function getAdminHtml(): string {
     function renderRulesTable() {
       const tbody = document.getElementById('rulesTableBody');
       if (!appConfig.rules || appConfig.rules.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-slate-500">No tracking rules yet. Click "Add Product Keyword" above.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-500">No tracking rules yet. Add a product by URL or keyword above.</td></tr>';
         return;
       }
 
-      tbody.innerHTML = appConfig.rules.map(rule => \`
-        <tr class="hover:bg-slate-900/50 transition">
-          <td class="px-5 py-3.5 font-medium text-white">
-            <div class="flex items-center gap-2">
-              <i class="fa-solid fa-tag text-emerald-400 text-xs"></i>
-              <span>\${rule.name}</span>
-            </div>
-          </td>
-          <td class="px-5 py-3.5 font-mono text-xs text-slate-400">
-            <span class="bg-slate-900 border border-slate-800 px-2 py-1 rounded">\${rule.keyword}</span>
-          </td>
-          <td class="px-5 py-3.5 text-center">
-            <button onclick="toggleRule('\${rule.id}')" class="px-2.5 py-1 rounded-full text-xs font-semibold \${rule.enabled ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500 border border-slate-700'}">
-              \${rule.enabled ? 'Active' : 'Disabled'}
-            </button>
-          </td>
-          <td class="px-5 py-3.5 text-right">
-            <button onclick="deleteRule('\${rule.id}')" class="text-rose-400 hover:text-rose-300 p-1.5 rounded hover:bg-rose-950/40 transition" title="Delete Rule">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </td>
-        </tr>
-      \`).join('');
+      tbody.innerHTML = appConfig.rules.map(function(rule) {
+        var imgHtml = rule.imageUrl
+          ? '<div class="w-11 h-11 rounded-xl bg-slate-900 border border-slate-700/80 p-1 flex items-center justify-center overflow-hidden cursor-pointer shrink-0 shadow-sm mx-auto" onclick="openLightbox(\'' + (rule.imageUrl || '').replace(/'/g, "\\'") + '\', \'' + (rule.name || '').replace(/'/g, "\\'") + '\')">' +
+              '<img src="' + rule.imageUrl + '" alt="" class="w-full h-full object-contain rounded-lg" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML=\'<i class=\\\'fa-solid fa-bottle-droplet text-emerald-400 text-sm\\\'></i>\';" />' +
+            '</div>'
+          : '<div class="w-11 h-11 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-emerald-400 shrink-0 mx-auto"><i class="fa-solid fa-bottle-droplet text-sm"></i></div>';
+
+        var priceBadge = rule.price ? ' <span class="text-xs text-emerald-400 font-mono font-semibold ml-2">₹' + rule.price + '</span>' : '';
+        var statusBtn = '<button onclick="toggleRule(\'' + rule.id + '\')" class="px-2.5 py-1 rounded-full text-xs font-semibold ' + (rule.enabled ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500 border border-slate-700') + '">' + (rule.enabled ? 'Active' : 'Disabled') + '</button>';
+
+        return '<tr class="hover:bg-slate-900/50 transition">' +
+          '<td class="px-4 py-3 text-center">' + imgHtml + '</td>' +
+          '<td class="px-5 py-3.5 font-medium text-white">' +
+            '<div class="flex items-center gap-1.5">' +
+              '<span class="font-semibold">' + rule.name + '</span>' +
+              priceBadge +
+            '</div>' +
+          '</td>' +
+          '<td class="px-5 py-3.5 font-mono text-xs text-slate-400">' +
+            '<span class="bg-slate-900 border border-slate-800 px-2 py-1 rounded">' + (rule.alias || rule.keyword) + '</span>' +
+          '</td>' +
+          '<td class="px-5 py-3.5 text-center">' + statusBtn + '</td>' +
+          '<td class="px-5 py-3.5 text-right">' +
+            '<button onclick="deleteRule(\'' + rule.id + '\')" class="text-rose-400 hover:text-rose-300 p-1.5 rounded hover:bg-rose-950/40 transition" title="Delete Rule">' +
+              '<i class="fa-solid fa-trash-can"></i>' +
+            '</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
     }
 
     // Load live dashboard inventory
@@ -827,14 +935,7 @@ export function getAdminHtml(): string {
       try {
         const res = await fetch('/api/dashboard', { headers: getAuthHeader() });
         if (res.status === 401) {
-          container.innerHTML = \`
-            <div class="glass p-8 rounded-2xl border border-amber-800/60 col-span-full text-center text-amber-300">
-              <i class="fa-solid fa-shield-halved text-2xl text-amber-400 mb-2"></i>
-              <p class="font-bold">Authentication Required</p>
-              <p class="text-xs text-amber-400/80 mt-1">Please authenticate with your admin password to view and manage products.</p>
-              <button onclick="openAuthModal()" class="mt-3 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold">Authenticate Session</button>
-            </div>
-          \`;
+          container.innerHTML = '<div class="glass p-8 rounded-2xl border border-amber-800/60 col-span-full text-center text-amber-300"><i class="fa-solid fa-shield-halved text-2xl text-amber-400 mb-2"></i><p class="font-bold">Authentication Required</p><p class="text-xs text-amber-400/80 mt-1">Please authenticate with your admin password to view and manage products.</p><button onclick="openAuthModal()" class="mt-3 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold">Authenticate Session</button></div>';
           return;
         }
         if (!res.ok) throw new Error('Failed to load dashboard data (HTTP ' + res.status + ')');
@@ -844,7 +945,7 @@ export function getAdminHtml(): string {
         renderCatalogExplorer(cachedCatalog);
 
         const matched = data.matchedProducts || [];
-        const inStockCount = matched.filter(p => p.available && p.inventoryQuantity > 0).length;
+        const inStockCount = matched.filter(function(p) { return p.available && p.inventoryQuantity > 0; }).length;
         document.getElementById('statInStockCount').innerText = inStockCount;
 
         if (data.lastScanTimestamp) {
@@ -854,48 +955,56 @@ export function getAdminHtml(): string {
         }
 
         if (matched.length === 0) {
-          container.innerHTML = \`
-            <div class="glass p-8 rounded-2xl border border-slate-800 col-span-full text-center text-slate-400">
-              <i class="fa-solid fa-magnifying-glass text-2xl text-slate-600 mb-2"></i>
-              <p>No products currently matched your tracking rules.</p>
-              <button onclick="switchTab('rules')" class="mt-3 text-xs bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg">Check Tracking Rules</button>
-            </div>
-          \`;
+          container.innerHTML = '<div class="glass p-8 rounded-2xl border border-slate-800 col-span-full text-center text-slate-400"><i class="fa-solid fa-magnifying-glass text-2xl text-slate-600 mb-2"></i><p>No products currently matched your tracking rules.</p><button onclick="switchTab(\'rules\')" class="mt-3 text-xs bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg">Check Tracking Rules</button></div>';
           return;
         }
 
-        container.innerHTML = matched.map(p => {
-          const inStock = p.available && p.inventoryQuantity > 0;
-          return \`
-            <div class="glass p-5 rounded-2xl border \${inStock ? 'border-emerald-500/40 shadow-lg shadow-emerald-950/20' : 'border-slate-800'} flex flex-col justify-between space-y-4 hover:border-slate-700 transition">
-              <div>
-                <div class="flex items-center justify-between gap-2 mb-2">
-                  <span class="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md \${inStock ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'}">
-                    \${inStock ? '● In Stock' : '○ Out of Stock'}
-                  </span>
-                  <span class="text-xs font-bold text-white">₹\${p.price}</span>
-                </div>
-                
-                <h3 class="font-bold text-sm text-slate-100 line-clamp-2 leading-snug">\${p.name}</h3>
-                <p class="text-[11px] text-slate-400 mt-1">Rule: <span class="text-emerald-400 font-medium">\${p.matchedRuleName || 'Custom'}</span></p>
-              </div>
+        container.innerHTML = matched.map(function(p) {
+          var inStock = p.available && p.inventoryQuantity > 0;
+          var imgHtml = p.imageUrl
+            ? '<div class="relative w-16 h-16 min-w-[64px] rounded-xl bg-slate-900 border border-slate-700/80 p-1 flex items-center justify-center overflow-hidden group cursor-pointer shrink-0 shadow" onclick="openLightbox(\'' + (p.imageUrl || '').replace(/'/g, "\\'") + '\', \'' + (p.name || '').replace(/'/g, "\\'") + '\')">' +
+                '<img src="' + p.imageUrl + '" alt="" class="w-full h-full object-contain rounded-lg transition duration-200 group-hover:scale-105" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML=\'<i class=\\\'fa-solid fa-bottle-droplet text-emerald-400 text-xl\\\'></i>\';" />' +
+                '<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white text-xs rounded-lg"><i class="fa-solid fa-magnifying-glass-plus"></i></div>' +
+              '</div>'
+            : '<div class="w-16 h-16 min-w-[64px] rounded-xl bg-slate-900 border border-slate-800 p-1 flex items-center justify-center text-emerald-400 shrink-0"><i class="fa-solid fa-bottle-droplet text-xl"></i></div>';
 
-              <div class="border-t border-slate-800/80 pt-3 flex items-center justify-between text-xs">
-                <div>
-                  <span class="text-slate-400 text-[11px]">Units: </span>
-                  <span class="font-bold font-mono \${inStock ? 'text-emerald-400' : 'text-slate-500'}">\${p.inventoryQuantity}</span>
-                </div>
-                <a href="\${p.url}" target="_blank" class="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-3 py-1.5 rounded-lg transition">
-                  <span>View Product</span> <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                </a>
-              </div>
-            </div>
-          \`;
+          var borderClass = inStock ? 'border-emerald-500/40 shadow-lg shadow-emerald-950/20' : 'border-slate-800';
+          var stockBadge = inStock
+            ? '<span class="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">● In Stock</span>'
+            : '<span class="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30">○ Out of Stock</span>';
+
+          return '<div class="glass p-5 rounded-2xl border ' + borderClass + ' flex flex-col justify-between space-y-4 hover:border-slate-700 transition">' +
+            '<div>' +
+              '<div class="flex items-center justify-between gap-2 mb-3">' +
+                stockBadge +
+                '<span class="text-xs font-bold text-white font-mono">₹' + p.price + '</span>' +
+              '</div>' +
+              '<div class="flex items-center gap-3.5">' +
+                imgHtml +
+                '<div class="min-w-0 flex-1">' +
+                  '<h3 class="font-bold text-sm text-slate-100 line-clamp-2 leading-snug">' + p.name + '</h3>' +
+                  '<p class="text-[11px] text-slate-400 mt-1">Rule: <span class="text-emerald-400 font-medium">' + (p.matchedRuleName || 'Custom') + '</span></p>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="border-t border-slate-800/80 pt-3 flex items-center justify-between text-xs">' +
+              '<div>' +
+                '<span class="text-slate-400 text-[11px]">Units: </span>' +
+                '<span class="font-bold font-mono ' + (inStock ? 'text-emerald-400' : 'text-slate-500') + '">' + p.inventoryQuantity + '</span>' +
+              '</div>' +
+              '<div class="flex items-center gap-2">' +
+                '<button onclick="untrackProduct(\'' + (p.matchedRuleId || p.id) + '\')" class="text-slate-400 hover:text-rose-400 p-1.5 rounded hover:bg-slate-800 transition" title="Untrack Product"><i class="fa-solid fa-trash-can text-xs"></i></button>' +
+                '<a href="' + p.url + '" target="_blank" class="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-3 py-1.5 rounded-lg transition">' +
+                  '<span>View Product</span> <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>' +
+                '</a>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
         }).join('');
 
       } catch (err) {
         console.error(err);
-        container.innerHTML = \`<div class="p-6 text-rose-400 col-span-full text-center">Failed to load live status: \${err.message}</div>\`;
+        container.innerHTML = '<div class="p-6 text-rose-400 col-span-full text-center">Failed to load live status: ' + err.message + '</div>';
       }
     }
 
@@ -915,29 +1024,216 @@ export function getAdminHtml(): string {
     function renderCatalogExplorer(products) {
       const tbody = document.getElementById('catalogTableBody');
       if (!products || products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-sans">No products returned from Amul</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-sans">No products returned from Amul</td></tr>';
         return;
       }
-      tbody.innerHTML = products.map(p => {
-        const inStock = p.available && p.inventoryQuantity > 0;
-        const isTracked = appConfig?.rules?.some(r => r.enabled && (p.name.toLowerCase().includes(r.keyword.toLowerCase()) || r.keyword.toLowerCase().includes(p.name.toLowerCase())));
-        return \`
-          <tr class="hover:bg-slate-900/40">
-            <td class="p-2.5 font-sans text-white font-medium">\${p.name}</td>
-            <td class="p-2.5">₹\${p.price}</td>
-            <td class="p-2.5">
-              <span class="px-2 py-0.5 rounded text-[10px] font-sans \${inStock ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-rose-950 text-rose-400 border border-rose-800'}">
-                \${inStock ? 'In Stock (' + p.inventoryQuantity + ')' : 'Out of Stock'}
-              </span>
-            </td>
-            <td class="p-2.5 text-right font-sans">
-              <button onclick="quickAddRule('\${p.name.replace(/'/g, "\\\\'")}')" class="text-[11px] \${isTracked ? 'text-slate-500 cursor-default' : 'text-emerald-400 hover:text-emerald-300'}">
-                \${isTracked ? '<i class=\"fa-solid fa-check\"></i> Tracked' : '+ Track'}
-              </button>
-            </td>
-          </tr>
-        \`;
+      tbody.innerHTML = products.map(function(p) {
+        var inStock = p.available && p.inventoryQuantity > 0;
+        var isTracked = appConfig && appConfig.rules && appConfig.rules.some(function(r) {
+          if (!r.enabled) return false;
+          if (r.productId && r.productId === p.id) return true;
+          if (r.alias && p.alias && r.alias.toLowerCase() === p.alias.toLowerCase()) return true;
+          var kw = (r.keyword || '').toLowerCase();
+          var nm = (p.name || '').toLowerCase();
+          return Boolean(kw && nm && (nm.includes(kw) || kw.includes(nm)));
+        });
+
+        var thumbHtml = p.imageUrl
+          ? '<div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700/80 p-1 flex items-center justify-center overflow-hidden cursor-pointer mx-auto shadow-sm" onclick="openLightbox(\'' + (p.imageUrl || '').replace(/'/g, "\\'") + '\', \'' + (p.name || '').replace(/'/g, "\\'") + '\')">' +
+              '<img src="' + p.imageUrl + '" alt="" class="w-full h-full object-contain rounded-lg" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML=\'<i class=\\\'fa-solid fa-bottle-droplet text-slate-500\\\'></i>\';" />' +
+            '</div>'
+          : '<div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 mx-auto"><i class="fa-solid fa-bottle-droplet"></i></div>';
+
+        var actionBtn = isTracked
+          ? '<button onclick="untrackProduct(\'' + (p.id || p.alias || '') + '\')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-rose-950 hover:border-rose-700 text-emerald-400 hover:text-rose-300 border border-slate-700 transition flex items-center gap-1.5 ml-auto">' +
+              '<i class="fa-solid fa-check text-emerald-400"></i> Tracked (Remove)' +
+            '</button>'
+          : '<button onclick="trackCatalogProduct(\'' + (p.id || '') + '\')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 transition flex items-center gap-1.5 ml-auto">' +
+              '<i class="fa-solid fa-plus"></i> Track' +
+            '</button>';
+
+        return '<tr class="hover:bg-slate-900/40">' +
+          '<td class="p-2.5 text-center">' + thumbHtml + '</td>' +
+          '<td class="p-2.5 font-sans text-white font-medium">' +
+            '<div class="leading-tight">' + p.name + '</div>' +
+            (p.alias ? '<div class="text-[10px] text-slate-500 font-mono mt-0.5">' + p.alias + '</div>' : '') +
+          '</td>' +
+          '<td class="p-2.5 font-mono text-white font-bold">₹' + p.price + '</td>' +
+          '<td class="p-2.5">' +
+            '<span class="px-2 py-0.5 rounded text-[10px] font-sans ' + (inStock ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-rose-950 text-rose-400 border border-rose-800') + '">' +
+              (inStock ? 'In Stock (' + p.inventoryQuantity + ')' : 'Out of Stock') +
+            '</span>' +
+          '</td>' +
+          '<td class="p-2.5 text-right font-sans">' + actionBtn + '</td>' +
+        '</tr>';
       }).join('');
+    }
+
+    // Direct Catalog Product Tracking
+    async function trackCatalogProduct(productId) {
+      var p = cachedCatalog.find(function(x) { return x.id === productId; });
+      if (!p) return;
+      try {
+        var res = await fetch('/api/products/track', {
+          method: 'POST',
+          headers: Object.assign({}, getAuthHeader(), { 'content-type': 'application/json' }),
+          body: JSON.stringify({
+            productId: p.id,
+            name: p.name,
+            alias: p.alias,
+            imageUrl: p.imageUrl,
+            price: p.price
+          })
+        });
+        var data = await res.json();
+        if (!data.success) throw new Error(data.error);
+        appConfig.rules = data.rules;
+        populateSettings();
+        renderCatalogExplorer(cachedCatalog);
+        showAlert('success', 'Now tracking: ' + p.name);
+        await loadDashboardData();
+      } catch (err) {
+        showAlert('error', 'Failed to track product: ' + err.message);
+      }
+    }
+
+    // Direct Product Untracking
+    async function untrackProduct(targetId) {
+      if (!targetId) return;
+      try {
+        var res = await fetch('/api/products/untrack', {
+          method: 'POST',
+          headers: Object.assign({}, getAuthHeader(), { 'content-type': 'application/json' }),
+          body: JSON.stringify({ productId: targetId })
+        });
+        var data = await res.json();
+        if (!data.success) throw new Error(data.error);
+        appConfig.rules = data.rules;
+        populateSettings();
+        renderCatalogExplorer(cachedCatalog);
+        showAlert('success', 'Product removed from tracking.');
+        await loadDashboardData();
+      } catch (err) {
+        showAlert('error', 'Failed to untrack product: ' + err.message);
+      }
+    }
+
+    // Track by Amul URL or Slug
+    async function trackByAmulUrl() {
+      var input = document.getElementById('inputAmulUrl');
+      var val = (input.value || '').trim();
+      if (!val) return showAlert('error', 'Please enter an Amul product URL or slug.');
+
+      var slug = val;
+      if (val.includes('shop.amul.com')) {
+        try {
+          var parsed = new URL(val);
+          var parts = parsed.pathname.split('/').filter(Boolean);
+          slug = parts[parts.length - 1] || val;
+        } catch (e) {
+          slug = val;
+        }
+      }
+      slug = slug.replace(/^https?:\/\/[^\/]+\/?/, '').replace(/^product\//, '');
+
+      var matchInCatalog = cachedCatalog.find(function(p) {
+        return (p.alias && p.alias.toLowerCase() === slug.toLowerCase()) ||
+               (p.name && p.name.toLowerCase().includes(slug.toLowerCase()));
+      });
+
+      var payload = {
+        alias: slug,
+        name: matchInCatalog ? matchInCatalog.name : slug.replace(/-/g, ' ').replace(/\b\w/g, function(l){ return l.toUpperCase(); }),
+        productId: matchInCatalog ? matchInCatalog.id : undefined,
+        imageUrl: matchInCatalog ? matchInCatalog.imageUrl : undefined,
+        price: matchInCatalog ? matchInCatalog.price : undefined
+      };
+
+      var btn = document.getElementById('btnTrackByUrl');
+      btn.disabled = true;
+      try {
+        var res = await fetch('/api/products/track', {
+          method: 'POST',
+          headers: Object.assign({}, getAuthHeader(), { 'content-type': 'application/json' }),
+          body: JSON.stringify(payload)
+        });
+        var data = await res.json();
+        if (!data.success) throw new Error(data.error);
+        appConfig.rules = data.rules;
+        populateSettings();
+        input.value = '';
+        showAlert('success', 'Successfully added tracking for: ' + payload.name);
+        await loadDashboardData();
+      } catch (err) {
+        showAlert('error', 'Failed to track URL: ' + err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // Save Daily Summary Settings
+    async function saveSummarySettings(e) {
+      e.preventDefault();
+      try {
+        var payload = {
+          enabled: document.getElementById('summaryEnabled').checked,
+          timeIst: document.getElementById('summaryTimeIst').value.trim() || '09:00'
+        };
+        var res = await fetch('/api/config/summary', {
+          method: 'POST',
+          headers: Object.assign({}, getAuthHeader(), { 'content-type': 'application/json' }),
+          body: JSON.stringify(payload)
+        });
+        var data = await res.json();
+        if (!data.success) throw new Error(data.error);
+        appConfig.summary = data.summary;
+        populateSettings();
+        showAlert('success', 'Daily Summary settings saved successfully!');
+      } catch (err) {
+        showAlert('error', 'Failed to save summary settings: ' + err.message);
+      }
+    }
+
+    // Test Daily Summary Alert
+    async function testDailySummary() {
+      var btn = document.getElementById('btnTestSummary');
+      var origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Dispatching test summary...';
+      try {
+        var res = await fetch('/api/summary/test', {
+          method: 'POST',
+          headers: getAuthHeader()
+        });
+        var data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Failed to dispatch summary');
+        var countInStock = data.inStockCount || 0;
+        var countOos = data.oosCount || 0;
+        showAlert('success', '✅ Daily Summary test delivered! (' + countInStock + ' in stock, ' + countOos + ' out of stock)');
+      } catch (err) {
+        showAlert('error', '❌ Daily Summary test failed: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+      }
+    }
+
+    // Lightbox Controls
+    function openLightbox(url, title) {
+      if (!url) return;
+      var modal = document.getElementById('lightboxModal');
+      var img = document.getElementById('lightboxImg');
+      var caption = document.getElementById('lightboxTitle');
+      if (modal && img) {
+        img.src = url;
+        if (caption) caption.innerText = title || 'Product Image';
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeLightbox() {
+      var modal = document.getElementById('lightboxModal');
+      if (modal) modal.classList.add('hidden');
     }
 
     // Trigger Manual Scan

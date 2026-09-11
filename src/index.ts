@@ -8,7 +8,8 @@ import {
   getScanLogs,
   runScan,
   matchesRule,
-  getPublicStatusData
+  getPublicStatusData,
+  sendManualDailySummary
 } from './scanner';
 import { sendTestNotification } from './telegram';
 import { sendNtfyTest } from './ntfy';
@@ -201,6 +202,8 @@ export default {
             if (rule) {
               matchedProducts.push({
                 ...p,
+                imageUrl: p.imageUrl || rule.imageUrl,
+                price: p.price || rule.price,
                 matchedRuleId: rule.id,
                 matchedRuleName: rule.name
               });
@@ -357,6 +360,86 @@ export default {
         config.rules = config.rules.filter(r => r.id !== ruleId);
         await saveConfig(env.AMUL_TRACKER_KV, config);
         return jsonResponse({ success: true, rules: config.rules });
+      }
+
+      // POST /api/products/track (Direct catalog item tracking)
+      if (path === '/api/products/track' && method === 'POST') {
+        const body = (await request.json()) as any;
+        const productId = (body.productId || body.id || '').trim();
+        const name = (body.name || '').trim();
+        const alias = (body.alias || '').trim();
+        const imageUrl = (body.imageUrl || '').trim();
+        const price = Number(body.price) || 0;
+
+        if (!name && !alias && !productId) {
+          return jsonResponse({ success: false, error: 'Product name, alias, or ID is required.' }, 400);
+        }
+
+        const existingIndex = config.rules.findIndex(r =>
+          (productId && (r.productId === productId || r.id === productId)) ||
+          (alias && r.alias === alias) ||
+          (name && r.name.toLowerCase() === name.toLowerCase())
+        );
+
+        if (existingIndex >= 0) {
+          config.rules[existingIndex].enabled = true;
+          if (imageUrl) config.rules[existingIndex].imageUrl = imageUrl;
+          if (price) config.rules[existingIndex].price = price;
+          if (productId) config.rules[existingIndex].productId = productId;
+          if (alias) config.rules[existingIndex].alias = alias;
+          if (name) config.rules[existingIndex].name = name;
+        } else {
+          const newRule: TrackedRule = {
+            id: productId ? `prod-${productId}` : `rule-${Date.now()}`,
+            productId: productId || undefined,
+            name: name || alias,
+            alias: alias || undefined,
+            imageUrl: imageUrl || undefined,
+            price: price || undefined,
+            keyword: name || alias,
+            enabled: true,
+            createdAt: Date.now()
+          };
+          config.rules.push(newRule);
+        }
+
+        await saveConfig(env.AMUL_TRACKER_KV, config);
+        return jsonResponse({ success: true, rules: config.rules });
+      }
+
+      // POST /api/products/untrack (Remove product from tracking)
+      if (path === '/api/products/untrack' && method === 'POST') {
+        const body = (await request.json()) as any;
+        const targetId = (body.productId || body.id || body.alias || '').trim();
+        if (!targetId) {
+          return jsonResponse({ success: false, error: 'Target ID is required.' }, 400);
+        }
+        config.rules = config.rules.filter(r =>
+          r.id !== targetId &&
+          r.productId !== targetId &&
+          r.alias !== targetId &&
+          r.keyword.toLowerCase() !== targetId.toLowerCase()
+        );
+        await saveConfig(env.AMUL_TRACKER_KV, config);
+        return jsonResponse({ success: true, rules: config.rules });
+      }
+
+      // POST /api/config/summary (Configure daily summary)
+      if (path === '/api/config/summary' && method === 'POST') {
+        const body = (await request.json()) as any;
+        config.summary = {
+          enabled: Boolean(body.enabled ?? config.summary?.enabled ?? true),
+          timeIst: (body.timeIst || config.summary?.timeIst || '09:00').trim(),
+          lastSentDate: config.summary?.lastSentDate || ''
+        };
+        await saveConfig(env.AMUL_TRACKER_KV, config);
+        return jsonResponse({ success: true, summary: config.summary });
+      }
+
+      // POST /api/summary/test (Send test daily summary digest)
+      if (path === '/api/summary/test' && method === 'POST') {
+        const summaryRes = await sendManualDailySummary(env.AMUL_TRACKER_KV);
+        return jsonResponse(summaryRes);
       }
 
       // GET /api/logs

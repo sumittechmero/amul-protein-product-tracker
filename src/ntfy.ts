@@ -9,6 +9,7 @@ export interface PublishOptions {
   priority?: '1' | '2' | '3' | '4' | '5' | 'min' | 'low' | 'default' | 'high' | 'urgent';
   tags?: string[];
   clickUrl?: string;
+  attachUrl?: string;
   token?: string;
 }
 
@@ -44,6 +45,10 @@ export async function publishNtfy(
   if (options.clickUrl) {
     headers['Click'] = options.clickUrl;
     headers['Actions'] = `view, Buy Now, ${options.clickUrl}`;
+  }
+
+  if (options.attachUrl) {
+    headers['Attach'] = options.attachUrl;
   }
 
   if (options.token) {
@@ -104,6 +109,58 @@ export async function sendNtfyRestockAlert(
     priority: 'urgent',
     tags: ['bell', 'shopping_cart', 'package'],
     clickUrl: product.url,
+    attachUrl: product.imageUrl,
+    token
+  });
+}
+
+/**
+ * Dispatches the daily stock summary report at 9:00 AM IST to ntfy.
+ */
+export async function sendNtfyDailySummary(
+  serverUrl: string,
+  topic: string,
+  inStockProducts: ProductInfo[],
+  oosProducts: ProductInfo[],
+  token?: string
+): Promise<NtfyResult> {
+  const istDate = new Date().toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: 'numeric',
+    month: 'short'
+  });
+
+  const title = `📊 Daily Stock Digest (${istDate}): ${inStockProducts.length} in stock`;
+  const lines = [
+    `📅 9:00 AM IST Morning Update`,
+    ``
+  ];
+
+  if (inStockProducts.length > 0) {
+    lines.push(`🟢 IN STOCK (${inStockProducts.length}):`);
+    for (const p of inStockProducts) {
+      lines.push(`• ${p.name} (${p.inventoryQuantity} units, ₹${p.price})`);
+    }
+  } else {
+    lines.push(`⚪ No tracked products in stock.`);
+  }
+
+  lines.push(``);
+
+  if (oosProducts.length > 0) {
+    lines.push(`🔴 CONTINUOUSLY OUT OF STOCK (${oosProducts.length}):`);
+    for (const p of oosProducts) {
+      lines.push(`• ${p.name} (₹${p.price})`);
+    }
+  }
+
+  const heroImage = inStockProducts.find(p => p.imageUrl)?.imageUrl || oosProducts.find(p => p.imageUrl)?.imageUrl;
+
+  return publishNtfy(serverUrl, topic, title, lines.join('\n'), {
+    priority: 'default',
+    tags: ['calendar', 'chart_with_upwards_trend'],
+    clickUrl: 'https://amul-stock-tracker.chataiappgpt.workers.dev/',
+    attachUrl: heroImage,
     token
   });
 }

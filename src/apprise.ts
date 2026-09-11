@@ -14,7 +14,8 @@ export async function sendAppriseNotification(
   targetUrls: string,
   title: string,
   body: string,
-  configKey?: string
+  configKey?: string,
+  attachUrl?: string
 ): Promise<AppriseResult> {
   const base = (serverUrl || '').trim().replace(/\/+$/, '');
   const urls = targetUrls.trim();
@@ -34,6 +35,10 @@ export async function sendAppriseNotification(
 
   if (urls) {
     payload.urls = urls;
+  }
+
+  if (attachUrl) {
+    payload.attachment = [attachUrl];
   }
 
   try {
@@ -86,7 +91,52 @@ export async function sendAppriseRestockAlert(
     `⏰ Checked at ${istTime} IST`
   ].join('\n');
 
-  return sendAppriseNotification(serverUrl, targetUrls, title, body, configKey);
+  return sendAppriseNotification(serverUrl, targetUrls, title, body, configKey, product.imageUrl);
+}
+
+/**
+ * Sends the daily stock summary report at 9:00 AM IST to Apprise.
+ */
+export async function sendAppriseDailySummary(
+  serverUrl: string,
+  targetUrls: string,
+  inStockProducts: ProductInfo[],
+  oosProducts: ProductInfo[],
+  configKey?: string
+): Promise<AppriseResult> {
+  const istDate = new Date().toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: 'numeric',
+    month: 'short'
+  });
+
+  const title = `📊 Daily Stock Digest (${istDate}): ${inStockProducts.length} in stock`;
+  const lines = [
+    `📅 9:00 AM IST Morning Update`,
+    ``
+  ];
+
+  if (inStockProducts.length > 0) {
+    lines.push(`🟢 IN STOCK (${inStockProducts.length}):`);
+    for (const p of inStockProducts) {
+      lines.push(`• ${p.name} (${p.inventoryQuantity} units, ₹${p.price})`);
+    }
+  } else {
+    lines.push(`⚪ No tracked products in stock.`);
+  }
+
+  lines.push(``);
+
+  if (oosProducts.length > 0) {
+    lines.push(`🔴 CONTINUOUSLY OUT OF STOCK (${oosProducts.length}):`);
+    for (const p of oosProducts) {
+      lines.push(`• ${p.name} (₹${p.price})`);
+    }
+  }
+
+  const heroImage = inStockProducts.find(p => p.imageUrl)?.imageUrl || oosProducts.find(p => p.imageUrl)?.imageUrl;
+
+  return sendAppriseNotification(serverUrl, targetUrls, title, lines.join('\n'), configKey, heroImage);
 }
 
 /**
@@ -128,7 +178,6 @@ export async function sendAppriseOutOfStockAlert(
     timeZone: 'Asia/Kolkata',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
     hour12: true
   });
 
@@ -139,6 +188,6 @@ export async function sendAppriseOutOfStockAlert(
     `⏰ Checked at ${istTime} IST`
   ].join('\n');
 
-  return sendAppriseNotification(serverUrl, targetUrls, title, body, configKey);
+  return sendAppriseNotification(serverUrl, targetUrls, title, body, configKey, product.imageUrl);
 }
 

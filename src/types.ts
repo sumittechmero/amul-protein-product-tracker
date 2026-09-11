@@ -9,6 +9,10 @@ export interface TrackedRule {
   keyword: string; // matched case-insensitively against product name or alias
   enabled: boolean;
   createdAt: number;
+  productId?: string;
+  alias?: string;
+  imageUrl?: string;
+  price?: number;
 }
 
 export interface TelegramConfig {
@@ -37,6 +41,12 @@ export interface AppriseConfig {
   notifyOnOutOfStock: boolean;
 }
 
+export interface DailySummaryConfig {
+  enabled: boolean;
+  timeIst: string; // e.g. "09:00" for 9:00 AM IST
+  lastSentDate?: string; // e.g. "2026-09-11" to prevent duplicate summaries
+}
+
 export interface AmulConfig {
   substoreId: string;
   category: string;
@@ -49,6 +59,7 @@ export interface AppConfig {
   ntfy: NtfyConfig;
   apprise: AppriseConfig;
   amul: AmulConfig;
+  summary: DailySummaryConfig;
   adminPassword: string;
   isScanningActive: boolean;
   rules: TrackedRule[];
@@ -88,6 +99,8 @@ export interface StockStateItem {
   lastChecked: number;
   lastAlertSentAt?: number;
   lastStatusChangeAt?: number;
+  imageUrl?: string;
+  matchedRuleId?: string;
 }
 
 export type StockState = Record<string, StockStateItem>;
