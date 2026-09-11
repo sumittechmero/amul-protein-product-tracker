@@ -414,12 +414,15 @@ export default {
         if (!targetId) {
           return jsonResponse({ success: false, error: 'Target ID is required.' }, 400);
         }
-        config.rules = config.rules.filter(r =>
-          r.id !== targetId &&
-          r.productId !== targetId &&
-          r.alias !== targetId &&
-          r.keyword.toLowerCase() !== targetId.toLowerCase()
-        );
+        const targetLower = targetId.toLowerCase();
+        config.rules = config.rules.filter(r => {
+          if (r.id === targetId || r.id.toLowerCase() === targetLower) return false;
+          if (r.productId && (r.productId === targetId || r.productId.toLowerCase() === targetLower)) return false;
+          if (r.alias && (r.alias === targetId || r.alias.toLowerCase() === targetLower)) return false;
+          if (r.keyword && r.keyword.toLowerCase() === targetLower) return false;
+          if (r.name && r.name.toLowerCase() === targetLower) return false;
+          return true;
+        });
         await saveConfig(env.AMUL_TRACKER_KV, config);
         return jsonResponse({ success: true, rules: config.rules });
       }

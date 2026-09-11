@@ -4,6 +4,18 @@ A continuous product stock monitoring Cloudflare Worker that scans [shop.amul.co
 
 ---
 
+## 🌐 Live Hosted Deployments & Endpoints
+
+| Service / Endpoint | URL | Description |
+|---|---|---|
+| **Public Stock Radar** | [https://amul-stock-tracker.chataiappgpt.workers.dev/](https://amul-stock-tracker.chataiappgpt.workers.dev/) | Swiss typography public status page with live stock beacons, 30-day/24-hour availability timelines, search, and category filters |
+| **Admin Control Panel** | [https://amul-stock-tracker.chataiappgpt.workers.dev/admin](https://amul-stock-tracker.chataiappgpt.workers.dev/admin) | Private management console for tracked products, alerts (Telegram, ntfy, Apprise), catalog explorer, and activity logs |
+| **Public Status API** | [https://amul-stock-tracker.chataiappgpt.workers.dev/api/public/status](https://amul-stock-tracker.chataiappgpt.workers.dev/api/public/status) | Unauthenticated JSON telemetry endpoint providing live inventory quantities and uptime percentages (30D, 7D, 24H) |
+| **Health Check API** | [https://amul-stock-tracker.chataiappgpt.workers.dev/api/health](https://amul-stock-tracker.chataiappgpt.workers.dev/api/health) | Public health check endpoint (`{"status": "ok"}`) |
+| **Self-Hosted ntfy Push Server** | [https://amul-ntfy.onrender.com](https://amul-ntfy.onrender.com) | Dedicated ntfy push notification instance deployed on Render with Docker |
+
+---
+
 ## Features
 
 - **Continuous Background Scanning**: Runs automatically every minute via Cloudflare Worker Cron Triggers (`scheduled` event).
@@ -142,21 +154,32 @@ Open the URL in any browser to access your deployed Admin Panel!
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/` | Web Admin Panel UI |
-| `GET` | `/api/health` | Public health check |
-| `GET` | `/api/config` | Retrieve active configuration |
-| `POST` | `/api/config/telegram` | Save Telegram Bot Token and Chat ID |
-| `POST` | `/api/config/amul` | Save Amul substore ID, cookies, and scanning toggle |
-| `GET` | `/api/dashboard` | Live product inventory, matched items, and stats |
-| `POST` | `/api/scan` | Trigger manual scan immediately |
-| `POST` | `/api/test-telegram` | Send test notification to Telegram |
-| `POST` | `/api/test-amul` | Test connection to shop.amul.com |
-| `GET` | `/api/rules` | List all tracked product rules |
-| `POST` | `/api/rules` | Add new product keyword rule |
-| `POST` | `/api/rules/:id/toggle` | Enable or disable a tracking rule |
-| `DELETE` | `/api/rules/:id` | Delete a tracking rule |
-| `GET` | `/api/logs` | Fetch recent scan activity logs |
+| Method | Endpoint | Auth Required | Description |
+|---|---|---|---|
+| `GET` | `/` | No | Public Stock Radar UI (Swiss Typography status page) |
+| `GET` | `/admin` | No (UI auth) | Admin Control Panel Single Page Application |
+| `GET` | `/api/public/status` | No | Unauthenticated JSON status & availability telemetry |
+| `GET` | `/api/health` | No | Public health check (`{"status":"ok"}`) |
+| `GET` | `/api/config` | Yes | Retrieve active configuration (password masked) |
+| `POST` | `/api/config/telegram` | Yes | Save Telegram Bot Token and Chat ID |
+| `POST` | `/api/config/ntfy` | Yes | Save ntfy push server, topic, and credentials |
+| `POST` | `/api/config/apprise` | Yes | Save Apprise gateway server and notification URLs |
+| `POST` | `/api/config/summary` | Yes | Configure daily morning digest schedule & enable/disable |
+| `POST` | `/api/config/password` | Yes | Update admin password |
+| `POST` | `/api/config/amul` | Yes | Save Amul substore ID, cookies, and scanning toggle |
+| `GET` | `/api/dashboard` | Yes | Live product inventory, matched items, and store catalog |
+| `POST` | `/api/scan` | Yes | Trigger manual scan immediately |
+| `POST` | `/api/test-telegram` | Yes | Send test notification to Telegram |
+| `POST` | `/api/test-ntfy` | Yes | Send test push notification to ntfy |
+| `POST` | `/api/test-apprise` | Yes | Send test notification to Apprise |
+| `POST` | `/api/summary/test` | Yes | Send test daily summary digest |
+| `POST` | `/api/test-amul` | Yes | Test connection to shop.amul.com API |
+| `GET` | `/api/rules` | Yes | List all tracked product rules |
+| `POST` | `/api/rules` | Yes | Add new product keyword rule |
+| `POST` | `/api/rules/:id/toggle` | Yes | Enable or disable a tracking rule |
+| `DELETE` | `/api/rules/:id` | Yes | Delete a tracking rule |
+| `POST` | `/api/products/track` | Yes | Direct catalog product tracking |
+| `POST` | `/api/products/untrack` | Yes | Untrack product by ID, alias, or keyword |
+| `GET` | `/api/logs` | Yes | Fetch recent scan activity logs |
 
-*All `/api/*` endpoints require the `x-admin-password` header.*
+*All authenticated `/api/*` endpoints require the `x-admin-password` header or Bearer authorization token.*

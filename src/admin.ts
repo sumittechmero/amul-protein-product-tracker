@@ -757,6 +757,16 @@ export function getAdminHtml(): string {
       if (tabId === 'dashboard' && (!cachedCatalog || cachedCatalog.length === 0)) loadDashboardData();
     }
 
+    function switchTabFromEl(el) {
+      var tab = el ? el.getAttribute('data-tab') : '';
+      if (tab) switchTab(tab);
+    }
+
+    function hideAlert() {
+      var el = document.getElementById('alertBanner');
+      if (el) el.classList.add('hidden');
+    }
+
     // Notification banner
     function showAlert(type, message) {
       const el = document.getElementById('alertBanner');
@@ -768,7 +778,7 @@ export function getAdminHtml(): string {
       const icon = type === 'success' ? 'fa-circle-check text-emerald-400' :
                    type === 'error' ? 'fa-triangle-exclamation text-rose-400' : 'fa-info-circle text-sky-400';
       
-      el.innerHTML = \`<i class="fa-solid \${icon} mt-0.5 text-base"></i><div class="flex-1">\${message}</div><button onclick="document.getElementById('alertBanner').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>\`;
+      el.innerHTML = '<i class="fa-solid ' + icon + ' mt-0.5 text-base"></i><div class="flex-1">' + message + '</div><button onclick="hideAlert()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>';
       el.classList.remove('hidden');
 
       setTimeout(() => {
@@ -893,20 +903,23 @@ export function getAdminHtml(): string {
     // Render Rules table in Tracked Products tab
     function renderRulesTable() {
       const tbody = document.getElementById('rulesTableBody');
-      if (!appConfig.rules || appConfig.rules.length === 0) {
+      if (!tbody) return;
+      if (!appConfig || !appConfig.rules || appConfig.rules.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-500">No tracking rules yet. Add a product by URL or keyword above.</td></tr>';
         return;
       }
 
       tbody.innerHTML = appConfig.rules.map(function(rule) {
+        var imgSafeUrl = rule.imageUrl || '';
+        var imgSafeName = (rule.name || '').replace(/"/g, '&quot;');
         var imgHtml = rule.imageUrl
-          ? '<div class="w-11 h-11 rounded-xl bg-slate-900 border border-slate-700/80 p-1 flex items-center justify-center overflow-hidden cursor-pointer shrink-0 shadow-sm mx-auto" onclick="openLightbox(\'' + (rule.imageUrl || '').replace(/'/g, "\\'") + '\', \'' + (rule.name || '').replace(/'/g, "\\'") + '\')">' +
-              '<img src="' + rule.imageUrl + '" alt="" class="w-full h-full object-contain rounded-lg" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML=\'<i class=\\\'fa-solid fa-bottle-droplet text-emerald-400 text-sm\\\'></i>\';" />' +
+          ? '<div class="w-11 h-11 rounded-xl bg-slate-900 border border-slate-700/80 p-1 flex items-center justify-center overflow-hidden cursor-pointer shrink-0 shadow-sm mx-auto" data-img="' + imgSafeUrl + '" data-name="' + imgSafeName + '" onclick="handleImageClick(this)">' +
+              '<img src="' + rule.imageUrl + '" alt="" class="w-full h-full object-contain rounded-lg" loading="lazy" onerror="handleImgError(this)" />' +
             '</div>'
           : '<div class="w-11 h-11 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-emerald-400 shrink-0 mx-auto"><i class="fa-solid fa-bottle-droplet text-sm"></i></div>';
 
         var priceBadge = rule.price ? ' <span class="text-xs text-emerald-400 font-mono font-semibold ml-2">₹' + rule.price + '</span>' : '';
-        var statusBtn = '<button onclick="toggleRule(\'' + rule.id + '\')" class="px-2.5 py-1 rounded-full text-xs font-semibold ' + (rule.enabled ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500 border border-slate-700') + '">' + (rule.enabled ? 'Active' : 'Disabled') + '</button>';
+        var statusBtn = '<button data-id="' + rule.id + '" onclick="toggleRule(this)" class="px-2.5 py-1 rounded-full text-xs font-semibold ' + (rule.enabled ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500 border border-slate-700') + '">' + (rule.enabled ? 'Active' : 'Disabled') + '</button>';
 
         return '<tr class="hover:bg-slate-900/50 transition">' +
           '<td class="px-4 py-3 text-center">' + imgHtml + '</td>' +
@@ -921,7 +934,7 @@ export function getAdminHtml(): string {
           '</td>' +
           '<td class="px-5 py-3.5 text-center">' + statusBtn + '</td>' +
           '<td class="px-5 py-3.5 text-right">' +
-            '<button onclick="deleteRule(\'' + rule.id + '\')" class="text-rose-400 hover:text-rose-300 p-1.5 rounded hover:bg-rose-950/40 transition" title="Delete Rule">' +
+            '<button data-id="' + rule.id + '" onclick="deleteRule(this)" class="text-rose-400 hover:text-rose-300 p-1.5 rounded hover:bg-rose-950/40 transition" title="Delete Rule">' +
               '<i class="fa-solid fa-trash-can"></i>' +
             '</button>' +
           '</td>' +
@@ -955,15 +968,17 @@ export function getAdminHtml(): string {
         }
 
         if (matched.length === 0) {
-          container.innerHTML = '<div class="glass p-8 rounded-2xl border border-slate-800 col-span-full text-center text-slate-400"><i class="fa-solid fa-magnifying-glass text-2xl text-slate-600 mb-2"></i><p>No products currently matched your tracking rules.</p><button onclick="switchTab(\'rules\')" class="mt-3 text-xs bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg">Check Tracking Rules</button></div>';
+          container.innerHTML = '<div class="glass p-8 rounded-2xl border border-slate-800 col-span-full text-center text-slate-400"><i class="fa-solid fa-magnifying-glass text-2xl text-slate-600 mb-2"></i><p>No products currently matched your tracking rules.</p><button data-tab="rules" onclick="switchTabFromEl(this)" class="mt-3 text-xs bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg">Check Tracking Rules</button></div>';
           return;
         }
 
         container.innerHTML = matched.map(function(p) {
           var inStock = p.available && p.inventoryQuantity > 0;
+          var imgSafeUrl = p.imageUrl || '';
+          var imgSafeName = (p.name || '').replace(/"/g, '&quot;');
           var imgHtml = p.imageUrl
-            ? '<div class="relative w-16 h-16 min-w-[64px] rounded-xl bg-slate-900 border border-slate-700/80 p-1 flex items-center justify-center overflow-hidden group cursor-pointer shrink-0 shadow" onclick="openLightbox(\'' + (p.imageUrl || '').replace(/'/g, "\\'") + '\', \'' + (p.name || '').replace(/'/g, "\\'") + '\')">' +
-                '<img src="' + p.imageUrl + '" alt="" class="w-full h-full object-contain rounded-lg transition duration-200 group-hover:scale-105" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML=\'<i class=\\\'fa-solid fa-bottle-droplet text-emerald-400 text-xl\\\'></i>\';" />' +
+            ? '<div class="relative w-16 h-16 min-w-[64px] rounded-xl bg-slate-900 border border-slate-700/80 p-1 flex items-center justify-center overflow-hidden group cursor-pointer shrink-0 shadow" data-img="' + imgSafeUrl + '" data-name="' + imgSafeName + '" onclick="handleImageClick(this)">' +
+                '<img src="' + p.imageUrl + '" alt="" class="w-full h-full object-contain rounded-lg transition duration-200 group-hover:scale-105" loading="lazy" onerror="handleImgError(this)" />' +
                 '<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white text-xs rounded-lg"><i class="fa-solid fa-magnifying-glass-plus"></i></div>' +
               '</div>'
             : '<div class="w-16 h-16 min-w-[64px] rounded-xl bg-slate-900 border border-slate-800 p-1 flex items-center justify-center text-emerald-400 shrink-0"><i class="fa-solid fa-bottle-droplet text-xl"></i></div>';
@@ -993,7 +1008,7 @@ export function getAdminHtml(): string {
                 '<span class="font-bold font-mono ' + (inStock ? 'text-emerald-400' : 'text-slate-500') + '">' + p.inventoryQuantity + '</span>' +
               '</div>' +
               '<div class="flex items-center gap-2">' +
-                '<button onclick="untrackProduct(\'' + (p.matchedRuleId || p.id) + '\')" class="text-slate-400 hover:text-rose-400 p-1.5 rounded hover:bg-slate-800 transition" title="Untrack Product"><i class="fa-solid fa-trash-can text-xs"></i></button>' +
+                '<button data-id="' + (p.matchedRuleId || p.id) + '" onclick="untrackProduct(this)" class="text-slate-400 hover:text-rose-400 p-1.5 rounded hover:bg-slate-800 transition" title="Untrack Product"><i class="fa-solid fa-trash-can text-xs"></i></button>' +
                 '<a href="' + p.url + '" target="_blank" class="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-3 py-1.5 rounded-lg transition">' +
                   '<span>View Product</span> <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>' +
                 '</a>' +
@@ -1038,17 +1053,19 @@ export function getAdminHtml(): string {
           return Boolean(kw && nm && (nm.includes(kw) || kw.includes(nm)));
         });
 
+        var imgSafeUrl = p.imageUrl || '';
+        var imgSafeName = (p.name || '').replace(/"/g, '&quot;');
         var thumbHtml = p.imageUrl
-          ? '<div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700/80 p-1 flex items-center justify-center overflow-hidden cursor-pointer mx-auto shadow-sm" onclick="openLightbox(\'' + (p.imageUrl || '').replace(/'/g, "\\'") + '\', \'' + (p.name || '').replace(/'/g, "\\'") + '\')">' +
-              '<img src="' + p.imageUrl + '" alt="" class="w-full h-full object-contain rounded-lg" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML=\'<i class=\\\'fa-solid fa-bottle-droplet text-slate-500\\\'></i>\';" />' +
+          ? '<div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700/80 p-1 flex items-center justify-center overflow-hidden cursor-pointer mx-auto shadow-sm" data-img="' + imgSafeUrl + '" data-name="' + imgSafeName + '" onclick="handleImageClick(this)">' +
+              '<img src="' + p.imageUrl + '" alt="" class="w-full h-full object-contain rounded-lg" loading="lazy" onerror="handleImgError(this)" />' +
             '</div>'
           : '<div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 mx-auto"><i class="fa-solid fa-bottle-droplet"></i></div>';
 
         var actionBtn = isTracked
-          ? '<button onclick="untrackProduct(\'' + (p.id || p.alias || '') + '\')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-rose-950 hover:border-rose-700 text-emerald-400 hover:text-rose-300 border border-slate-700 transition flex items-center gap-1.5 ml-auto">' +
+          ? '<button data-id="' + (p.id || p.alias || '') + '" onclick="untrackProduct(this)" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-rose-950 hover:border-rose-700 text-emerald-400 hover:text-rose-300 border border-slate-700 transition flex items-center gap-1.5 ml-auto">' +
               '<i class="fa-solid fa-check text-emerald-400"></i> Tracked (Remove)' +
             '</button>'
-          : '<button onclick="trackCatalogProduct(\'' + (p.id || '') + '\')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 transition flex items-center gap-1.5 ml-auto">' +
+          : '<button data-id="' + (p.id || '') + '" onclick="trackCatalogProduct(this)" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 transition flex items-center gap-1.5 ml-auto">' +
               '<i class="fa-solid fa-plus"></i> Track' +
             '</button>';
 
@@ -1070,7 +1087,11 @@ export function getAdminHtml(): string {
     }
 
     // Direct Catalog Product Tracking
-    async function trackCatalogProduct(productId) {
+    async function trackCatalogProduct(target) {
+      var productId = (typeof target === 'object' && target !== null && target.getAttribute)
+        ? target.getAttribute('data-id')
+        : target;
+      if (!productId) return;
       var p = cachedCatalog.find(function(x) { return x.id === productId; });
       if (!p) return;
       try {
@@ -1090,6 +1111,7 @@ export function getAdminHtml(): string {
         appConfig.rules = data.rules;
         populateSettings();
         renderCatalogExplorer(cachedCatalog);
+        renderRulesTable();
         showAlert('success', 'Now tracking: ' + p.name);
         await loadDashboardData();
       } catch (err) {
@@ -1098,7 +1120,10 @@ export function getAdminHtml(): string {
     }
 
     // Direct Product Untracking
-    async function untrackProduct(targetId) {
+    async function untrackProduct(target) {
+      var targetId = (typeof target === 'object' && target !== null && target.getAttribute)
+        ? target.getAttribute('data-id')
+        : target;
       if (!targetId) return;
       try {
         var res = await fetch('/api/products/untrack', {
@@ -1111,6 +1136,7 @@ export function getAdminHtml(): string {
         appConfig.rules = data.rules;
         populateSettings();
         renderCatalogExplorer(cachedCatalog);
+        renderRulesTable();
         showAlert('success', 'Product removed from tracking.');
         await loadDashboardData();
       } catch (err) {
@@ -1125,16 +1151,19 @@ export function getAdminHtml(): string {
       if (!val) return showAlert('error', 'Please enter an Amul product URL or slug.');
 
       var slug = val;
-      if (val.includes('shop.amul.com')) {
+      if (slug.includes('://')) {
         try {
-          var parsed = new URL(val);
+          var parsed = new URL(slug);
           var parts = parsed.pathname.split('/').filter(Boolean);
-          slug = parts[parts.length - 1] || val;
-        } catch (e) {
-          slug = val;
-        }
+          slug = parts[parts.length - 1] || slug;
+        } catch (e) {}
       }
-      slug = slug.replace(/^https?:\/\/[^\/]+\/?/, '').replace(/^product\//, '');
+      if (slug.startsWith('product/')) {
+        slug = slug.substring(8);
+      }
+      slug = slug.split('?')[0].split('#')[0];
+      while (slug.startsWith('/')) slug = slug.substring(1);
+      while (slug.endsWith('/')) slug = slug.substring(0, slug.length - 1);
 
       var matchInCatalog = cachedCatalog.find(function(p) {
         return (p.alias && p.alias.toLowerCase() === slug.toLowerCase()) ||
@@ -1161,6 +1190,8 @@ export function getAdminHtml(): string {
         if (!data.success) throw new Error(data.error);
         appConfig.rules = data.rules;
         populateSettings();
+        renderCatalogExplorer(cachedCatalog);
+        renderRulesTable();
         input.value = '';
         showAlert('success', 'Successfully added tracking for: ' + payload.name);
         await loadDashboardData();
@@ -1236,6 +1267,19 @@ export function getAdminHtml(): string {
       if (modal) modal.classList.add('hidden');
     }
 
+    function handleImageClick(el) {
+      var url = el.getAttribute('data-img');
+      var name = el.getAttribute('data-name');
+      openLightbox(url, name);
+    }
+
+    function handleImgError(el) {
+      el.onerror = null;
+      if (el.parentElement) {
+        el.parentElement.innerHTML = '<i class="fa-solid fa-bottle-droplet text-emerald-400 text-sm"></i>';
+      }
+    }
+
     // Trigger Manual Scan
     async function triggerScan() {
       const btn = document.getElementById('btnScanNow');
@@ -1251,9 +1295,9 @@ export function getAdminHtml(): string {
         const data = await res.json();
         if (!data.success) throw new Error(data.error || 'Scan failed');
 
-        let msg = \`Scan completed! Checked \${data.totalFound} products. \${data.matchedCount} tracked items (\${data.inStockCount} in stock).\`;
+        let msg = 'Scan completed! Checked ' + data.totalFound + ' products. ' + data.matchedCount + ' tracked items (' + data.inStockCount + ' in stock).';
         if (data.alertsSent && data.alertsSent.length > 0) {
-          msg += \`<br><b>Alerts sent:</b> \${data.alertsSent.join(', ')}\`;
+          msg += '<br><b>Alerts sent:</b> ' + data.alertsSent.join(', ');
         }
         showAlert('success', msg);
         await loadDashboardData();
@@ -1484,7 +1528,7 @@ export function getAdminHtml(): string {
         const data = await res.json();
         if (!data.success) throw new Error(data.error);
 
-        showAlert('success', \`✅ Successfully connected to Amul API! Found \${data.totalFound} products in '\${data.category}' category.\`);
+        showAlert('success', '✅ Successfully connected to Amul API! Found ' + data.totalFound + ' products in "' + data.category + '" category.');
       } catch (err) {
         showAlert('error', '❌ Amul API connection failed: ' + err.message);
       } finally {
@@ -1518,8 +1562,10 @@ export function getAdminHtml(): string {
 
         appConfig.rules = data.rules;
         populateSettings();
+        renderCatalogExplorer(cachedCatalog);
+        renderRulesTable();
         closeAddRuleModal();
-        showAlert('success', \`Added tracking rule for: \${name}\`);
+        showAlert('success', 'Added tracking rule for: ' + name);
         await loadDashboardData();
       } catch (err) {
         showAlert('error', 'Failed to add rule: ' + err.message);
@@ -1527,15 +1573,19 @@ export function getAdminHtml(): string {
     }
 
     function quickAddRule(productName) {
-      const keyword = productName.replace(/Amul High Protein|Amul Kool|Pack of.*|\\d+\\s*(mL|g)/gi, '').trim();
+      const keyword = productName.replace(/Amul High Protein|Amul Kool|Pack of.*|[0-9]+[ ]*(mL|g)/gi, '').trim();
       document.getElementById('newRuleName').value = productName.substring(0, 30);
       document.getElementById('newRuleKeyword').value = keyword || productName;
       openAddRuleModal();
     }
 
-    async function toggleRule(ruleId) {
+    async function toggleRule(target) {
+      var ruleId = (typeof target === 'object' && target !== null && target.getAttribute)
+        ? target.getAttribute('data-id')
+        : target;
+      if (!ruleId) return;
       try {
-        const res = await fetch(\`/api/rules/\${ruleId}/toggle\`, {
+        const res = await fetch('/api/rules/' + ruleId + '/toggle', {
           method: 'POST',
           headers: getAuthHeader()
         });
@@ -1544,16 +1594,22 @@ export function getAdminHtml(): string {
 
         appConfig.rules = data.rules;
         populateSettings();
+        renderCatalogExplorer(cachedCatalog);
+        renderRulesTable();
         await loadDashboardData();
       } catch (err) {
         showAlert('error', 'Failed to toggle rule: ' + err.message);
       }
     }
 
-    async function deleteRule(ruleId) {
+    async function deleteRule(target) {
+      var ruleId = (typeof target === 'object' && target !== null && target.getAttribute)
+        ? target.getAttribute('data-id')
+        : target;
+      if (!ruleId) return;
       if (!confirm('Are you sure you want to stop tracking this product?')) return;
       try {
-        const res = await fetch(\`/api/rules/\${ruleId}\`, {
+        const res = await fetch('/api/rules/' + ruleId, {
           method: 'DELETE',
           headers: getAuthHeader()
         });
@@ -1562,6 +1618,8 @@ export function getAdminHtml(): string {
 
         appConfig.rules = data.rules;
         populateSettings();
+        renderCatalogExplorer(cachedCatalog);
+        renderRulesTable();
         showAlert('success', 'Tracking rule deleted.');
         await loadDashboardData();
       } catch (err) {
@@ -1581,30 +1639,28 @@ export function getAdminHtml(): string {
           return;
         }
 
-        tbody.innerHTML = logs.map(log => {
+        tbody.innerHTML = logs.map(function(log) {
           const d = new Date(log.timestamp);
           const timeStr = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }) + ', ' + d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
           const isSuccess = log.status === 'success';
           const alertsCount = log.alertsSent ? log.alertsSent.length : 0;
 
-          return \`
-            <tr class="hover:bg-slate-900/50">
-              <td class="px-4 py-3 whitespace-nowrap text-slate-300 font-sans">\${timeStr}</td>
-              <td class="px-4 py-3 uppercase text-[10px]">\${log.trigger}</td>
-              <td class="px-4 py-3 text-slate-400">\${log.totalFound}</td>
-              <td class="px-4 py-3 text-slate-300">\${log.matchedCount}</td>
-              <td class="px-4 py-3 font-semibold \${log.inStockCount > 0 ? 'text-emerald-400' : 'text-slate-500'}">\${log.inStockCount}</td>
-              <td class="px-4 py-3 text-sky-400 font-sans">\${alertsCount > 0 ? alertsCount + ' sent' : 'None'}</td>
-              <td class="px-4 py-3 font-sans">
-                <span class="px-2 py-0.5 rounded text-[10px] font-semibold \${isSuccess ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">
-                  \${log.status}
-                </span>
-              </td>
-            </tr>
-          \`;
+          return '<tr class="hover:bg-slate-900/50">' +
+            '<td class="px-4 py-3 whitespace-nowrap text-slate-300 font-sans">' + timeStr + '</td>' +
+            '<td class="px-4 py-3 uppercase text-[10px]">' + log.trigger + '</td>' +
+            '<td class="px-4 py-3 text-slate-400">' + log.totalFound + '</td>' +
+            '<td class="px-4 py-3 text-slate-300">' + log.matchedCount + '</td>' +
+            '<td class="px-4 py-3 font-semibold ' + (log.inStockCount > 0 ? 'text-emerald-400' : 'text-slate-500') + '">' + log.inStockCount + '</td>' +
+            '<td class="px-4 py-3 text-sky-400 font-sans">' + (alertsCount > 0 ? alertsCount + ' sent' : 'None') + '</td>' +
+            '<td class="px-4 py-3 font-sans">' +
+              '<span class="px-2 py-0.5 rounded text-[10px] font-semibold ' + (isSuccess ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400') + '">' +
+                log.status +
+              '</span>' +
+            '</td>' +
+          '</tr>';
         }).join('');
       } catch (err) {
-        tbody.innerHTML = \`<tr><td colspan="7" class="p-6 text-center text-rose-400 font-sans">Failed to load logs: \${err.message}</td></tr>\`;
+        tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-rose-400 font-sans">Failed to load logs: ' + err.message + '</td></tr>';
       }
     }
 
